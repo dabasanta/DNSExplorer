@@ -42,3 +42,8 @@ This corresponds to the top 1,000 of the most used subdomains globally by organi
 This file must be specified using the basolute path, or just the name if it is in the same directory as the script.
 **Note:** The file must be text and correspond to the "*ASCII text*" format, any other format will not be for the script.
 
+## DNSExplorer-minimal
+
+Ideal to be run in hostile shell environments, for example a **low-privilege remote reverse** shell. Unnecessary output and bash colors have been removed, the script has been shortened to optimize its performance by removing unnecessary line breaks.
+
+Its functionality is identical to that of the original script, it has only been optimized a little more at the shell scripting level, leaving aside the aesthetics of the code.
