@@ -20,6 +20,7 @@ It is useful in initial and post-exploit enumeration phases on unix systems.
 ```
 
 ![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/basicRecon.png)
+
 The script leaves few local traces that are hardly detected. It can also be run directly from github if you have an internet connection:
 
 ```bash
@@ -37,6 +38,7 @@ The script has two main modes of operation, which correspond to a basic enumerat
 After discovering the DNS servers behind a domain, the script tries to do an *AXFR* zone transfer on each of the servers with an NS record.
 
 ![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/ZoneTransfer.png)
+
 In case all servers fail and zone transfer is not possible, or *DNSSec* is enabled, the script will automatically switch to brute force function.
 
 ### BruteForce
@@ -47,6 +49,7 @@ This corresponds to the top 1,000 of the most used subdomains globally by organi
 **Custom:** In case you have a custom dictionary and you want to fuzz the subdomains with information taken from your information gathering phase, you can specify the file path.
 
 ![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/subdomain-bruteforce.png)
+
 This file must be specified using the basolute path, or just the name if it is in the same directory as the script.
 **Note:** The file must be text and correspond to the "*ASCII text*" format, any other format will not be for the script.
 
