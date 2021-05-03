@@ -3,12 +3,13 @@
 # @author-linkedin: https://www.linkedin.com/in/danilobasanta/
 # @author-github: https://github.com/dabasanta
 
-end="\e[0m";info="\e[1m\e[36m[+]";output="\e[1m\e[36m[++]";error="\e[1m\e[91m[!!]";question="\e[1m\e[93m[?]";green="\e[92m";ok="\e[1m\e[92m";mkdir -p /tmp/dnsecrecon;tput civis
+end="\e[0m";info="\e[1m\e[36m[+]";output="\e[1m\e[36m[++]";error="\e[1m\e[91m[!!]";question="\e[1m\e[93m[?]";green="\e[92m";ok="\e[1m\e[92m"
+mkdir -p /tmp/dnsexplorer;tput civis
 
 
 clean(){
     echo -e "\n\n"
-    rm -rf /tmp/dnsecrecon
+    rm -rf /tmp/dnsexplorer
     echo -e "$output Happy hunting.$end"
     tput cnorm
     exit 0
@@ -123,6 +124,22 @@ basicRecon(){
         echo -e ""
     else
         echo -e "$question Hosts $1 has not description records\n"
+    fi
+
+    echo -e "$info Checking if $1 has a TLS site\e[92m"
+    connected=$(echo -n|openssl s_client -connect  "$1:443" 2>/dev/null|head -1|awk -F "(" '{print $1}')
+    if [[ $connected == "CONNECTED" ]];then
+        DNS=$(echo -n|openssl s_client -connect "$1:443" 2>/dev/null|sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'|openssl x509 -text | sed 's/\                //'|grep -i "DNS:"|awk -F ":" '{print $1}')
+        if [[ $DNS == "DNS" ]];then
+            echo -e "$output The domain $1 has a secure webserver and your certificate have these alternate domain names:\e[92m"
+            echo -n |openssl s_client -connect "$1:443" 2>/dev/null| sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:"| tr ',' '\n'|sed 's/\               //'
+            subjects=$(echo -n |openssl s_client -connect "$1:443" 2>/dev/null| sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:"| tr ',' '\n'|sed 's/\               //'|wc -l)
+            echo -e "$output $subjects alternate DNS domain found.\n"
+        else
+            echo -e "$question Domain $1 has secure website at $1:443, but does not have alternate subject names.\n"
+        fi
+    else
+        echo -e "$error No website found on $1:443\n"
     fi
 
     echo -e "$info Finding nameserver address for $1 domain \e[92m"
