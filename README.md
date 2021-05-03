@@ -13,7 +13,7 @@ Ideal for **RedTeam** scenarios where a quick view of the internal or external D
 ![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/BasicRecon2.png)
 It is useful in initial and post-exploit enumeration phases on unix systems.
 
-## usage
+## Usage
 
 ```bash
 ./DNSExplorer.sh <domain.name>
@@ -52,6 +52,14 @@ This corresponds to the top 1,000 of the most used subdomains globally by organi
 
 This file must be specified using the basolute path, or just the name if it is in the same directory as the script.
 **Note:** The file must be text and correspond to the "*ASCII text*" format, any other format will not be for the script.
+
+## TLS SAN Validation
+
+The script validates if it can connect to the domain using openssl against port 443 in order to find a secure website, then it inspects its TLS certificate for SAN records and displays them to the user.
+
+![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/TLS-SAN-Validation.png)
+
+Port 443 is used by default because the vast majority of domains on the internet host their secure web service on that port. However, this can be changed in the script code for specific cases.
 
 ## DNSExplorer-minimal
 
