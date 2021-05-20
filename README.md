@@ -6,6 +6,13 @@ DNSExplorer is a shell script that automates the enumeration process of a domain
 
 Its goal is enum the domains and subdomains using the default server in the revolv.conf file to give an overview of the DNS service.
 
+## Dependencies
+
+- OpenSSL
+- cURL
+- host (dnsutils / bind-utils)
+- ping (net-tools)
+
 ## Use cases
 
 Ideal for **RedTeam** scenarios where a quick view of the internal or external DNS network landscape is required.
