@@ -208,8 +208,8 @@ banner(){
         ░ ▒  ▒ ░ ░░   ░ ▒░░ ░▒  ░ ░ ░ ░  ░░░   ░▒ ░░▒ ░     ░ ░ ▒  ░  ░ ▒ ▒░   ░▒ ░ ▒░ ░ ░  ░  ░▒ ░ ▒░
         ░ ░  ░    ░   ░ ░ ░  ░  ░     ░    ░    ░  ░░         ░ ░   ░ ░ ░ ▒    ░░   ░    ░     ░░   ░ 
         ░             ░       ░     ░  ░ ░    ░               ░  ░    ░ ░     ░        ░  ░   ░     
-        ░                                                                                             
-            $end"
+        ░        ░$end By: Danilo Basanta (https://github.com/dabasanta/) / (https://www.linkedin.com/in/danilobasanta/)\n\n"
+
 }
 
 if [ $# == 1 ];then
