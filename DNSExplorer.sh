@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 # @author: Danilo Basanta
 # @author-linkedin: https://www.linkedin.com/in/danilobasanta/
 # @author-github: https://github.com/dabasanta
