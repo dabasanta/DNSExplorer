@@ -18,10 +18,10 @@ clean(){
 doZoneTransfer(){
     success=1
     for nsi in $(cat /tmp/dnsexplorer/NameServers.txt);do
-    host -l $1 $nsi | grep -i "has address" > /dev/null
-        if [[ $? -eq 0 ]];then
+    host -l "$1" "$nsi" | grep -i "has address" > /dev/null
+        if $? ; then
             echo -e "$green NameServer $nsi accept ZoneTransfer$end\n"
-            host -l $1 $nsi | grep -i "has address"
+            host -l "$1" "$nsi" | grep -i "has address"
             success=0
         else
             echo -e "$error NameServer $nsi does not accept zone transfer$end"
