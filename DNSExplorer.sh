@@ -152,8 +152,8 @@ basicRecon(){
     echo -e "$info Finding IP address for A records \e[92m"
     host "$1" | grep 'has address' | awk '{print $4}'
     echo -e ""
-
     echo -e "$info Finding IPv6 address for AAA records \e[92m"
+
     if host "$1" | grep 'IPv6' >/dev/null 2>&1;then
         host "$1" | grep 'IPv6'| awk '{print $5}'
         echo -e ""
@@ -162,6 +162,7 @@ basicRecon(){
     fi
 
     echo -e "$info Finding mail server address for $1 domain \e[92m"
+
     if host -t MX "$1" | grep 'mail' >/dev/null 2>&1;then
         host "$1" | grep 'mail' | awk '{print $6,$7}'
         echo -e ""
@@ -170,6 +171,7 @@ basicRecon(){
     fi
 
     echo -e "$info Finding CNAME records for $1 domain \e[92m"
+
     if host -t CNAME "$1" | grep 'alias' >/dev/null 2>&1;then
         host -t CNAME "$1" | awk '{print $1,$4,$6}'
         echo -e ""
@@ -178,6 +180,7 @@ basicRecon(){
     fi
 
     echo -e "$info Finding text description for $1 domain \e[92m"
+
     if host -t txt "$1" | grep 'descriptive' >/dev/null 2>&1;then
         host -t txt "$1" | grep 'descriptive'
         echo -e ""
@@ -186,13 +189,16 @@ basicRecon(){
     fi
 
     echo -e "$info Checking if $1 has a TLS site\e[92m"
-    connected=$(echo -n|openssl s_client -connect  "$1:443" 2>/dev/null|head -1|awk -F "(" '{print $1}')
+
+    connected=$(echo -n | openssl s_client -connect  "$1:443" 2>/dev/null | head -1 | awk -F "(" '{print $1}')
+
     if [[ $connected == "CONNECTED" ]];then
-        DNS=$(echo -n|openssl s_client -connect "$1:443" 2>/dev/null|sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'|openssl x509 -text | sed 's/\                //'|grep -i "DNS:"|awk -F ":" '{print $1}')
+        DNS=$(echo -n | openssl s_client -connect "$1:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | sed 's/\                //'|grep -i "DNS:" | awk -F ":" '{print $1}')
+
         if [[ $DNS == "DNS" ]];then
             echo -e "$output The domain $1 has a secure webserver and your certificate have these alternate domain names:\e[92m"
-            echo -n |openssl s_client -connect "$1:443" 2>/dev/null| sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:"| tr ',' '\n'|sed 's/\               //'
-            subjects=$(echo -n |openssl s_client -connect "$1:443" 2>/dev/null| sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:"| tr ',' '\n'|sed 's/\               //'|wc -l)
+            echo -n | openssl s_client -connect "$1:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:"| tr ',' '\n' | sed 's/\               //'
+            subjects=$(echo -n | openssl s_client -connect "$1:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:" | tr ',' '\n' | sed 's/\               //' | wc -l)
             echo -e "$output $subjects alternate DNS domain found.\n"
         else
             echo -e "$question Domain $1 has secure website at $1:443, but does not have alternate subject names.\n"
@@ -202,16 +208,19 @@ basicRecon(){
     fi
 
     echo -e "$info Finding nameserver address for $1 domain \e[92m"
-    if host -t NS $1 | grep 'name server' >/dev/null 2>&1;then
-        host -t NS $1 | cut -d " " -f 4
-        host -t NS $1 | cut -d " " -f 4 > /tmp/dnsexplorer/NameServers.txt
+
+    if host -t NS "$1" | grep 'name server' >/dev/null 2>&1;then
+        host -t NS "$1" | cut -d " " -f 4
+        host -t NS "$1" | cut -d " " -f 4 > /tmp/dnsexplorer/NameServers.txt
         ns=$(wc -l /tmp/dnsexplorer/NameServers.txt | awk '{print $1}')
         echo -e "\n$output $ns DNS Servers was found, trying ZoneTransfer on these servers$end"
+
         if doZoneTransfer "$1";then
             echo -e "\n$ok DNS zone transfer was possible, no bruteforce attacks on the subdomains are required. $end\n"
             clean
         else
             echo -e "\n$error DNS zone transfer was not possible, DNS servers are not accept it"
+
             while true; do
                 echo ""
                 tput cnorm
@@ -252,11 +261,11 @@ tput cnorm
 checkDependencies() {
     if ! command -v host &> /dev/null
     then
-        echo -e "$error 'host' command is not avaliable, please install the bind-utils/dnsutils package. $end";tput cnorm;exit 1
+        echo -e "$error 'host' command is not available, please install the bind-utils/dnsutils package. $end";tput cnorm;exit 1
     fi
     if ! command -v curl &> /dev/null
     then
-        echo -e "$error 'curl' command is not avaliable, please install the curl package. $end";tput cnorm;exit 1
+        echo -e "$error 'curl' command is not available, please install the curl package. $end";tput cnorm;exit 1
     fi
 }
 
