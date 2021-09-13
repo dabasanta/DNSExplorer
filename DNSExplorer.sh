@@ -272,31 +272,38 @@ banner(){
 }
 
 if [ $# == 1 ];then
-    if [ $1 = "-h" ] || [ $1 = "help" ] || [ $1 = "--help" ] || [ $1 = "-help" ];then
+
+    if [ "$1" = "-h" ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ];then
         help
+
     elif [ $# == 1 ];then
         banner
         checkDependencies
-        if ping -c 1 $1 >/dev/null 2>&1;then
-            if host $1 >/dev/null 2>&1;then
-                basicRecon $1
+
+        if ping -c 1 "$1" >/dev/null 2>&1;then
+            if host "$1" >/dev/null 2>&1;then
+                basicRecon "$1"
             else
                 echo -e "$error No route to host, please verify your DNS server or internet connection$end"
-                tput cnorm;exit 1
-            fi    
+                clean
+            fi
         else
             echo -e "$question PING was not success, does server ignoring ICMP packets?$end"
-            if host $1 >/dev/null 2>&1;then
+            if host "$1" >/dev/null 2>&1;then
                 echo -e "$info Running checks anyway$end\n"
-                basicRecon $1
+                basicRecon "$1"
+
             else
                 echo -e "$error No route to host, please verify your DNS server or internet connection$end"
-                tput cnorm;exit 1
+                clean
             fi
         fi
     fi
+
 else
     echo -e "$error Invalid arguments $end"
-    help;tput cnorm; exit 1
+    help
+    tput cnorm
+    exit 1
 fi
 
