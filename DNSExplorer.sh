@@ -35,9 +35,8 @@ doZoneTransfer(){  # Perform zone transfer attack using recently discovered dns 
 
     while IFS= read -r nameserver
     do
-      host -l "$1" "$nameserver" | grep -i "has address" > /dev/null
-        if [[ "$?" -eq 0 ]] ; then
-            echo -e "$green NameServer $nameserver accept ZoneTransfer$end\n"
+      if host -l "$1" "$nameserver" | grep -i "has address" > /dev/null;then
+        echo -e "$green NameServer $nameserver accept ZoneTransfer$end\n"
             host -l "$1" "$nameserver" | grep -i "has address"
             success=0
         else
@@ -54,6 +53,7 @@ dictionaryAttack(){
     curl -s https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt -o /tmp/dnsexplorer/bit.txt
 
     if [ -f /tmp/dnsexplorer/bit.txt ];then
+        # shellcheck disable=SC2002
         cat /tmp/dnsexplorer/bit.txt | head -1000 > /tmp/dnsexplorer/bitquark.txt
 
         l=$(wc -l /tmp/dnsexplorer/bitquark.txt | awk '{print $1}')
@@ -62,9 +62,8 @@ dictionaryAttack(){
 
         while IFS= read -r fqdn
         do
-          host $fqdn.$1 | head -1 | grep "has address"
-
-          if [ "$?" -eq 0 ];then
+          # shellcheck disable=SC2086
+          if host "$fqdn"."$1" | head -1 | grep "has address";then
             s=$((s+1))
           fi
 
@@ -109,6 +108,7 @@ dictionaryAttackCustom(){
                 done < <(grep -v '^ *#' < "$dfile")
 
                 if [ $su -ge 1 ];then
+                  # shellcheck disable=SC1087
                   echo -e "\n\e[1m$green[+] Found $su subdomains.$end"
                 else
                   echo -e "\n\e[1m$error Found $su subdomains.$end"
