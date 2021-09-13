@@ -189,10 +189,10 @@ basicRecon(){
 
     connected=$(echo -n | openssl s_client -connect  "$1:443" 2>/dev/null | head -1 | awk -F "(" '{print $1}')
 
-    if [[ $connected == "CONNECTED" ]];then
+    if [[ "$connected" == "CONNECTED" ]];then
         DNS=$(echo -n | openssl s_client -connect "$1:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | sed 's/\                //'|grep -i "DNS:" | awk -F ":" '{print $1}')
 
-        if [[ $DNS == "DNS" ]];then
+        if [[ "$DNS" == "DNS" ]];then
             echo -e "$output The domain $1 has a secure webserver and your certificate have these alternate domain names:\e[92m"
             echo -n | openssl s_client -connect "$1:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:"| tr ',' '\n' | sed 's/\               //'
             subjects=$(echo -n | openssl s_client -connect "$1:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:" | tr ',' '\n' | sed 's/\               //' | wc -l)
