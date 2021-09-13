@@ -94,23 +94,20 @@ dictionaryAttackCustom(){
             istext=$(file "$dfile" | awk '{print $2}')
 
             if [[ $istext = "ASCII" ]];then
-                lenn=$(wc -l "$dfile" | awk '{print $1}')
+                l=$(wc -l "$dfile" | awk '{print $1}')
                 co=1
                 su=0
 
                 while IFS= read -r sub
                 do
-                  host $sub.$1 | head -1 | grep "has address"
-
-                  if [ $? -eq 0 ];then
+                  if host "$sub"."$1" | head -1 | grep "has address"; then
                     su=$((su+1))
                   fi
 
-                  echo -ne "$output Using entry: $green$co$end \e[1m\e[36mof \e[1m\e[36m$lenn.$end \r"
+                  echo -ne "$output Using entry: $green$co$end \e[1m\e[36mof \e[1m\e[36m$l.$end \r"
                   co=$((co+1))
                 done < <(grep -v '^ *#' < "$dfile")
 
-                # shellcheck disable=SC1087
                 if [ $su -ge 1 ];then
                   echo -e "\n\e[1m$green[+] Found $su subdomains.$end"
                 else
