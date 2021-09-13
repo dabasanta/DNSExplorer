@@ -3,11 +3,19 @@
 # @author-linkedin: https://www.linkedin.com/in/danilobasanta/
 # @author-github: https://github.com/dabasanta
 
-end="\e[0m";info="\e[1m\e[36m[+]";output="\e[1m\e[36m[++]";error="\e[1m\e[91m[!!]";question="\e[1m\e[93m[?]";green="\e[92m";ok="\e[1m\e[92m"
-mkdir -p /tmp/dnsexplorer;tput civis
+# Changing between bash colors in outputs
+end="\e[0m"
+info="\e[1m\e[36m[+]"
+output="\e[1m\e[36m[++]"
+error="\e[1m\e[91m[!!]"
+question="\e[1m\e[93m[?]"
+green="\e[92m"
+ok="\e[1m\e[92m"
 
+mkdir -p /tmp/dnsexplorer  # Creating temporally directory
+tput civis  # Making beep off
 
-clean(){
+clean(){  # Cleaning the system after execution
     echo -e "\n\n"
     rm -rf /tmp/dnsexplorer
     echo -e "$output Happy hunting.$end"
@@ -15,60 +23,107 @@ clean(){
     exit 0
 }
 
-doZoneTransfer(){
+function scape() {  # Catch the ctrl_c INT key
+  echo -e "output [+] Exiting ... $end"
+  clean
+}
+
+trap scape INT
+
+doZoneTransfer(){  # Perform zone transfer attack using recently discovered dns servers
     success=1
-    for nsi in $(cat /tmp/dnsexplorer/NameServers.txt);do
-    host -l "$1" "$nsi" | grep -i "has address" > /dev/null
-        if $? ; then
-            echo -e "$green NameServer $nsi accept ZoneTransfer$end\n"
-            host -l "$1" "$nsi" | grep -i "has address"
+
+    while IFS= read -r nameserver
+    do
+      host -l "$1" "$nameserver" | grep -i "has address" > /dev/null
+        if [[ "$?" -eq 0 ]] ; then
+            echo -e "$green NameServer $nameserver accept ZoneTransfer$end\n"
+            host -l "$1" "$nameserver" | grep -i "has address"
             success=0
         else
-            echo -e "$error NameServer $nsi does not accept zone transfer$end"
+            echo -e "$error NameServer $nameserver does not accept zone transfer$end"
         fi
-    done;return $success
+    done < <(grep -v '^ *#' < /tmp/dnsexplorer/NameServers.txt)
+
+    return $success
 }
 
 dictionaryAttack(){
-    tput civis;echo -e "\n$output Using the first 1.000 records of the dictionary:$green https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt\n\e[1m\e[36mCourtesy of seclists ;)$end\n"
+    tput civis
+    echo -e "\n$output Using the first 1.000 records of the dictionary:$green https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt\n\e[1m\e[36mCourtesy of seclists ;)$end\n"
     curl -s https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt -o /tmp/dnsexplorer/bit.txt
+
     if [ -f /tmp/dnsexplorer/bit.txt ];then
         cat /tmp/dnsexplorer/bit.txt | head -1000 > /tmp/dnsexplorer/bitquark.txt
-        l=$(wc -l /tmp/dnsexplorer/bitquark.txt | awk '{print $1}');c=1;s=0
-        for fqdn in $(cat /tmp/dnsexplorer/bitquark.txt);do
-            host $fqdn.$1 | head -1 | grep "has address"
-            if [ $? -eq 0 ];then s=$(($s+1));fi
-            echo -ne "$output Using entry: $green$c$end \e[1m\e[36mof \e[1m\e[36m$l.$end \r"
-            c=$(($c+1))
-        done
-        if [ $s -ge 1 ];then echo -e "\n\e[1m$green[+] Found $s subdomains.$end";else echo -e "\n\e[1m$error[!!] Found $s subdomains.$end";fi
+
+        l=$(wc -l /tmp/dnsexplorer/bitquark.txt | awk '{print $1}')
+        c=1
+        s=0
+
+        while IFS= read -r fqdn
+        do
+          host $fqdn.$1 | head -1 | grep "has address"
+
+          if [ "$?" -eq 0 ];then
+            s=$((s+1))
+          fi
+
+          echo -ne "$output Using entry: $green$c$end \e[1m\e[36mof \e[1m\e[36m$l.$end \r"
+          c=$((c+1))
+        done < <(grep -v '^ *#' < /tmp/dnsexplorer/bitquark.txt)
+
+        # shellcheck disable=SC1087
+        if [ $s -ge 1 ];then
+          echo -e "\n\e[1m$green[+] Found $s subdomains.$end"
+        else
+          echo -e "\n\e[1m$error[!!] Found $s subdomains.$end"
+        fi
     else
-        echo -e "$error Could not download dictionary from seclists url.$end";clean
-    fi;
+        echo -e "$error Could not download dictionary from seclists url.$end"
+        clean
+    fi
 }
 
 dictionaryAttackCustom(){
     check=0
     while [ $check -eq 0 ];do
-        echo -e "$question";read -p "Enter the path of the dictionary file> " dfile
-        echo -e "$end"
+        echo -e "$question"
+        read -rp "Enter the path of the dictionary file> " dfile ; echo -e "$end"
+
         if [ -f "$dfile" ];then
-            istext=$(file $dfile | awk '{print $2}')
+            istext=$(file "$dfile" | awk '{print $2}')
+
             if [[ $istext = "ASCII" ]];then
-                lenn=$(wc -l $dfile | awk '{print $1}')
-                co=1;su=0
-                for sub in $(cat $dfile);do
-                    host $sub.$1 | head -1 | grep "has address"
-                    if [ $? -eq 0 ];then su=$(($su+1));fi
-                    echo -ne "$output Using entry: $green$co$end \e[1m\e[36mof \e[1m\e[36m$lenn.$end \r"
-                    c=$(($co+1))
-                done
-                if [ $su -ge 1 ];then echo -e "\n\e[1m$green[+] Found $su subdomains.$end";else echo -e "\n\e[1m$error Found $su subdomains.$end";fi
+                lenn=$(wc -l "$dfile" | awk '{print $1}')
+                co=1
+                su=0
+
+                while IFS= read -r sub
+                do
+                  host $sub.$1 | head -1 | grep "has address"
+
+                  if [ $? -eq 0 ];then
+                    su=$((su+1))
+                  fi
+
+                  echo -ne "$output Using entry: $green$co$end \e[1m\e[36mof \e[1m\e[36m$lenn.$end \r"
+                  co=$((co+1))
+                done < <(grep -v '^ *#' < "$dfile")
+
+                # shellcheck disable=SC1087
+                if [ $su -ge 1 ];then
+                  echo -e "\n\e[1m$green[+] Found $su subdomains.$end"
+                else
+                  echo -e "\n\e[1m$error Found $su subdomains.$end"
+                fi
+
                 check=1
                 clean
+
             else
                 echo -e "$error the file is not ASCII text. Can't use it."
             fi
+
         else
             echo -e "$error File $dfile does not exists."
         fi
@@ -76,14 +131,18 @@ dictionaryAttackCustom(){
 }
 
 bruteForceDNS(){
-    echo -e "$output Fuzzing subdomains of $1\n"
+    echo -e "$output Fuzzing subdomains of $1 $end\n"
     echo -e "$question Do yo want to use a custom dictionary? [C=custom/d=Default]$end"
     echo -e "$info Default: Provides a dictionary with the top 1000 of the most commonly used subdomains.\nCustom: Use your own custom dictionary."
+
     while true; do
-        echo -e "$question";read -p "[D/c]> " dc;echo -e "$end"
+        echo -e "$question"
+        read -rp "[D/c]> " dc
+        echo -e "$end"
+
         case $dc in
-            [Dd]* ) dictionaryAttack $1; break;;
-            [Cc]* ) dictionaryAttackCustom $1; break;;
+            [Dd]* ) dictionaryAttack "$1"; break;;
+            [Cc]* ) dictionaryAttackCustom "$1"; break;;
             * ) echo -e "$error Please answer$green D$end \e[1m\e[91mor$end$green\e[1m C$end\e[1m\e[91m.$end\n";;
         esac
     done
@@ -91,36 +150,36 @@ bruteForceDNS(){
 
 basicRecon(){
     echo -e "$info Finding IP address for A records \e[92m"
-    host $1 | grep 'has address' | awk '{print $4}'
+    host "$1" | grep 'has address' | awk '{print $4}'
     echo -e ""
 
     echo -e "$info Finding IPv6 address for AAA records \e[92m"
-    if host $1 | grep 'IPv6' >/dev/null 2>&1;then
-        host $1 | grep 'IPv6'| awk '{print $5}'
+    if host "$1" | grep 'IPv6' >/dev/null 2>&1;then
+        host "$1" | grep 'IPv6'| awk '{print $5}'
         echo -e ""
     else
         echo -e "$question Hosts $1 has not IPv6 address\n" 
     fi
 
     echo -e "$info Finding mail server address for $1 domain \e[92m"
-    if host -t MX $1 | grep 'mail' >/dev/null 2>&1;then
-        host $1 | grep 'mail' | awk '{print $6,$7}'
+    if host -t MX "$1" | grep 'mail' >/dev/null 2>&1;then
+        host "$1" | grep 'mail' | awk '{print $6,$7}'
         echo -e ""
     else
         echo -e "$question Hosts $1 has not mail server records\n"
     fi
 
     echo -e "$info Finding CNAME records for $1 domain \e[92m"
-    if host -t CNAME $1 | grep 'alias' >/dev/null 2>&1;then
-        host -t CNAME $1 | awk '{print $1,$4,$6}'
+    if host -t CNAME "$1" | grep 'alias' >/dev/null 2>&1;then
+        host -t CNAME "$1" | awk '{print $1,$4,$6}'
         echo -e ""
     else
         echo -e "$question Hosts $1 has not alias records\n"
     fi
 
     echo -e "$info Finding text description for $1 domain \e[92m"
-    if host -t txt $1 | grep 'descriptive' >/dev/null 2>&1;then
-        host -t txt $1 | grep 'descriptive'
+    if host -t txt "$1" | grep 'descriptive' >/dev/null 2>&1;then
+        host -t txt "$1" | grep 'descriptive'
         echo -e ""
     else
         echo -e "$question Hosts $1 has not description records\n"
@@ -216,7 +275,8 @@ if [ $# == 1 ];then
     if [ $1 = "-h" ] || [ $1 = "help" ] || [ $1 = "--help" ] || [ $1 = "-help" ];then
         help
     elif [ $# == 1 ];then
-        banner;checkDependencies
+        banner
+        checkDependencies
         if ping -c 1 $1 >/dev/null 2>&1;then
             if host $1 >/dev/null 2>&1;then
                 basicRecon $1
