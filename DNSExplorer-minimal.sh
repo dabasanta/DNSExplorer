@@ -4,7 +4,7 @@
 # @author-github: https://github.com/dabasanta
 mkdir -p /tmp/dnsexplorer
 clean(){
-    rm -rf /tmp/dnsecrecon;exit 0
+  rm -rf /tmp/dnsecrecon;exit 0
 }
 doZoneTransfer(){
     success=1;for nsi in $(cat /tmp/dnsexplorer/NameServers.txt);do host -l $1 $nsi | grep -i "has address" > /dev/null;if [[ $? -eq 0 ]];then echo -e "[+] NameServer $nsi accept ZoneTransfer\n";host -l $1 $nsi | grep -i "has address";success=0;else echo -e "[-] NameServer $nsi does not accept zone transfer";fi;done;return $success
