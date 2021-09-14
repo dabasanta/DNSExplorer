@@ -265,7 +265,7 @@ basicRecon(){
       host -t NS "$1" | cut -d " " -f 4 > /tmp/dnsexplorer/NameServers.txt
       ns=$(wc -l /tmp/dnsexplorer/NameServers.txt | awk '{print $1}')
       echo -e "\n$output $ns DNS Servers was found, trying ZoneTransfer on these servers$end"
-# Por aqui vamos...
+
       if doZoneTransfer "$1";then
         echo -e "\n$ok DNS zone transfer was possible, no bruteforce attacks on the subdomains are required. $end\n"
         clean
@@ -293,7 +293,7 @@ basicRecon(){
       host -t NS "$1" "$2" | cut -d " " -f 4 > /tmp/dnsexplorer/NameServers.txt
       ns=$(wc -l /tmp/dnsexplorer/NameServers.txt | awk '{print $1}')
       echo -e "\n$output $ns DNS Servers was found, trying ZoneTransfer on these servers$end"
-# Por aqui vamos...
+
       if doZoneTransfer "$1";then
         echo -e "\n$ok DNS zone transfer was possible, no bruteforce attacks on the subdomains are required. $end\n"
         clean
