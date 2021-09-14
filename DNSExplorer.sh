@@ -30,21 +30,22 @@ function scape() {  # Catch the ctrl_c INT key
 
 trap scape INT
 
-doZoneTransfer(){  # Perform zone transfer attack using recently discovered dns servers
-    success=1
+doZoneTransfer(){
+  # Perform zone transfer attack using recently discovered dns servers
+  success=1
 
-    while IFS= read -r nameserver
-    do
-      if host -l "$1" "$nameserver" | grep -i "has address" > /dev/null;then
-        echo -e "$green NameServer $nameserver accept ZoneTransfer$end\n"
-            host -l "$1" "$nameserver" | grep -i "has address"
-            success=0
-        else
-            echo -e "$error NameServer $nameserver does not accept zone transfer$end"
-        fi
-    done < <(grep -v '^ *#' < /tmp/dnsexplorer/NameServers.txt)
+  while IFS= read -r nameserver
+  do
+  if host -l "$1" "$nameserver" | grep -i "has address" > /dev/null;then
+    echo -e "$green NameServer $nameserver accept ZoneTransfer$end\n"
+      host -l "$1" "$nameserver" | grep -i "has address"
+      success=0
+    else
+      echo -e "$error NameServer $nameserver does not accept zone transfer$end"
+    fi
+  done < <(grep -v '^ *#' < /tmp/dnsexplorer/NameServers.txt)
 
-    return $success
+  return $success
 }
 
 dictionaryAttack(){
