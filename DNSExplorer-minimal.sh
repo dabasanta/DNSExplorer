@@ -38,56 +38,19 @@ echo -e " Finding IP address for A records \e[92m";if [ -z "$2" ];then host "$1"
             [Yy]* ) bruteForceDNS "$1"; break;;
             [Nn]* ) clean;;
             * ) echo -e " Please answer yes or no.\n";;
-          esac;done;fi;fi;else if host -t NS "$1" "$2" | grep 'name server' >/dev/null 2>&1;then host -t NS "$1" "$2" | cut -d " " -f 4;host -t NS "$1" "$2" | cut -d " " -f 4 > /tmp/dnsexplorer/NameServers.txt;ns=$(wc -l /tmp/dnsexplorer/NameServers.txt | awk '{print $1}');echo -e "\n $ns DNS Servers was found, trying ZoneTransfer on these servers";if doZoneTransfer "$1";then echo -e "\n DNS zone transfer was possible, no bruteforce attacks on the subdomains are required. \n";clean;else echo -e "\n DNS zone transfer was not possible, DNS servers are not accept it";while true;do echo ""
-          tput cnorm
-          echo -e ""
-          read -rp "Do you want to brute force subdomains? [Y/n]> " yn
-          echo -e ""
-
+          esac;done;fi;fi;else if host -t NS "$1" "$2" | grep 'name server' >/dev/null 2>&1;then host -t NS "$1" "$2" | cut -d " " -f 4;host -t NS "$1" "$2" | cut -d " " -f 4 > /tmp/dnsexplorer/NameServers.txt;ns=$(wc -l /tmp/dnsexplorer/NameServers.txt | awk '{print $1}');echo -e "\n $ns DNS Servers was found, trying ZoneTransfer on these servers";if doZoneTransfer "$1";then echo -e "\n DNS zone transfer was possible, no bruteforce attacks on the subdomains are required. \n";clean;else echo -e "\n DNS zone transfer was not possible, DNS servers are not accept it";while true;do echo "";tput cnorm;echo -e "";read -rp "Do you want to brute force subdomains? [Y/n]> " yn;echo -e ""
           case $yn in
             [Yy]* ) bruteForceDNS "$1"; break;;
             [Nn]* ) clean;;
             * ) echo -e " Please answer yes or no.\n";;
-          esac
-        done
-      fi
-    fi
-  fi
+          esac;done;fi;fi;fi
 }
-
 help(){
-    echo -e "                               
-        \e[92m@@@  @@@  @@@@@@@@  @@@       @@@@@@@   
-        @@@  @@@  @@@@@@@@  @@@       @@@@@@@@  
-        @@!  @@@  @@!       @@!       @@!  @@@  
-        !@!  @!@  !@!       !@!       !@!  @!@  
-        @!@!@!@!  @!!!:!    @!!       @!@@!@!   
-        !!!@!!!!  !!!!!:    !!!       !!@!!!    
-        !!:  !!!  !!:       !!:       !!:       
-        :!:  !:!  :!:        :!:      :!:       
-        ::   :::   :: ::::   :: ::::   ::       
-        :   : :  : :: ::   : :: : :   :        
-
-
-\e[36mDNSExplorer automates the enumeration of DNS servers and domains using the 'host' tool and the predefined DNS server in /etc/resolv.conf.
-
-\e[36mTo use it run: ./DNSExplorer.sh domain.com\n"
-tput cnorm
+echo -e "DNSExplorer-minimal.sh automates the enumeration of DNS servers and domains using the 'host' tool and the predefined DNS server in /etc/resolv.conf.\nTo use it run: ./DNSExplorer-minimal.sh domain.com\n>Or use:\n./DNSExplorer-minimal.sh domain.com dns.server";tput cnorm
 }
-
 checkDependencies() {
-    if ! command -v host &> /dev/null
-    then
-        echo -e " 'host' command is not available, please install the bind-utils/dnsutils package. "
-        clean
-    fi
-    if ! command -v curl &> /dev/null
-    then
-        echo -e " 'curl' command is not available, please install the curl package. "
-        clean
-    fi
+if ! command -v host &> /dev/null;then echo -e " 'host' command is not available, please install the bind-utils/dnsutils package. ";clean;fi;if ! command -v curl &> /dev/null;then echo -e " 'curl' command is not available, please install the curl package. ";clean;fi
 }
-
 banner(){
     echo -e "\e[91m
         ▓█████▄  ███▄    █   ██████ ▓█████ ▒██   ██▒ ██▓███   ██▓     ▒█████   ██▀███  ▓█████  ██▀███  
@@ -99,42 +62,9 @@ banner(){
         ░ ▒  ▒ ░ ░░   ░ ▒░░ ░▒  ░ ░ ░ ░  ░░░   ░▒ ░░▒ ░     ░ ░ ▒  ░  ░ ▒ ▒░   ░▒ ░ ▒░ ░ ░  ░  ░▒ ░ ▒░
         ░ ░  ░    ░   ░ ░ ░  ░  ░     ░    ░    ░  ░░         ░ ░   ░ ░ ░ ▒    ░░   ░    ░     ░░   ░ 
         ░             ░       ░     ░  ░ ░    ░               ░  ░    ░ ░     ░        ░  ░   ░     
-        ░ v:1.0.0     ░ By: Danilo Basanta (https://github.com/dabasanta/) | (https://www.linkedin.com/in/danilobasanta/)\n\n"
-
+        ░ v:1.0.0     ░ By: Danilo Basanta (https://github.com/dabasanta/) | (https://www.linkedin.com/in/danilobasanta/)\n\n\e[0m"
 }
-
-if [ $# == 1 ];then
-
-    if [ "$1" = "-h" ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ] || [ "$2" = "-h" ] || [ "$2" = "--help" ] || [ "$2" = "-help" ] || [ "$2" = "help" ];then
-        help
-
-    elif [ $# == 1 ];then
-        banner
-        checkDependencies
-
-        if ping -c 1 "$1" > /dev/null 2>&1;then
-            if host "$1" > /dev/null 2>&1;then
-                basicRecon "$1"
-            else
-                echo -e " No route to host, please verify your DNS server or internet connection"
-                clean
-            fi
-        else
-            echo -e " PING was not success, does server ignoring ICMP packets?"
-            if host "$1" > /dev/null 2>&1;then
-                echo -e " Running checks anyway\n"
-                basicRecon "$1"
-
-            else
-                echo -e " No route to host, please verify your DNS server or internet connection"
-                clean
-            fi
-        fi
-    fi
-elif [ $# == 2 ];then
-
-  if [ "$1" = "-h" ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ] || [ "$2" = "-h" ] || [ "$2" = "--help" ] || [ "$2" = "-help" ] || [ "$2" = "help" ];then
-        help
+if [ $# == 1 ];then if [ "$1" = "-h" ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ] || [ "$2" = "-h" ] || [ "$2" = "--help" ] || [ "$2" = "-help" ] || [ "$2" = "help" ];then help;elif [ $# == 1 ];then banner;checkDependencies;if ping -c 1 "$1" > /dev/null 2>&1;then if host "$1" > /dev/null 2>&1;then basicRecon "$1";else echo -e " No route to host, please verify your DNS server or internet connection";clean;fi;else echo -e " PING was not success, does server ignoring ICMP packets?";if host "$1" > /dev/null 2>&1;then echo -e " Running checks anyway\n";basicRecon "$1";else echo -e " No route to host, please verify your DNS server or internet connection";clean;fi;fi;fi;elif [ $# == 2 ];then if [ "$1" = "-h" ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ] || [ "$2" = "-h" ] || [ "$2" = "--help" ] || [ "$2" = "-help" ] || [ "$2" = "help" ];then help
   else
     banner
     checkDependencies
