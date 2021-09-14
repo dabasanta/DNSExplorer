@@ -150,7 +150,6 @@ crtSH(){
   echo -e "\n$info Finding subdomains - abusing Certificate Transparency Logs using https://crt.sh/\n$end"
   curl -s "https://crt.sh/?q=${domain_search}&output=json" | jq .[].name_value | sed 's/"//g' | tr '\n' '\n'
   echo -e "\n"
-
 }
 
 basicRecon(){
