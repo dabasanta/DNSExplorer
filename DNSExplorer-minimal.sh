@@ -64,34 +64,5 @@ banner(){
         ░             ░       ░     ░  ░ ░    ░               ░  ░    ░ ░     ░        ░  ░   ░     
         ░ v:1.0.0     ░ By: Danilo Basanta (https://github.com/dabasanta/) | (https://www.linkedin.com/in/danilobasanta/)\n\n\e[0m"
 }
-if [ $# == 1 ];then if [ "$1" = "-h" ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ] || [ "$2" = "-h" ] || [ "$2" = "--help" ] || [ "$2" = "-help" ] || [ "$2" = "help" ];then help;elif [ $# == 1 ];then banner;checkDependencies;if ping -c 1 "$1" > /dev/null 2>&1;then if host "$1" > /dev/null 2>&1;then basicRecon "$1";else echo -e " No route to host, please verify your DNS server or internet connection";clean;fi;else echo -e " PING was not success, does server ignoring ICMP packets?";if host "$1" > /dev/null 2>&1;then echo -e " Running checks anyway\n";basicRecon "$1";else echo -e " No route to host, please verify your DNS server or internet connection";clean;fi;fi;fi;elif [ $# == 2 ];then if [ "$1" = "-h" ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ] || [ "$2" = "-h" ] || [ "$2" = "--help" ] || [ "$2" = "-help" ] || [ "$2" = "help" ];then help
-  else
-    banner
-    checkDependencies
-
-    if ping -c 1 "$1" > /dev/null 2>&1;then
-        if host "$1" > /dev/null 2>&1;then
-            basicRecon "$1" "$2"
-        else
-            echo -e " No route to host, please verify your DNS server or internet connection"
-            clean
-        fi
-    else
-        echo -e " PING was not success, does server ignoring ICMP packets?"
-        if host "$1" > /dev/null 2>&1;then
-            echo -e " Running checks anyway\n"
-            basicRecon "$1" "$2"
-
-        else
-            echo -e " No route to host, please verify your DNS server or internet connection"
-            clean
-        fi
-    fi
-  fi
-else
-    echo -e " Invalid arguments "
-    help
-    tput cnorm
-    exit 1
-fi
+if [ $# == 1 ];then if [ "$1" = "-h" ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ] || [ "$2" = "-h" ] || [ "$2" = "--help" ] || [ "$2" = "-help" ] || [ "$2" = "help" ];then help;elif [ $# == 1 ];then banner;checkDependencies;if ping -c 1 "$1" > /dev/null 2>&1;then if host "$1" > /dev/null 2>&1;then basicRecon "$1";else echo -e " No route to host, please verify your DNS server or internet connection";clean;fi;else echo -e " PING was not success, does server ignoring ICMP packets?";if host "$1" > /dev/null 2>&1;then echo -e " Running checks anyway\n";basicRecon "$1";else echo -e " No route to host, please verify your DNS server or internet connection";clean;fi;fi;fi;elif [ $# == 2 ];then if [ "$1" = "-h" ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ] || [ "$2" = "-h" ] || [ "$2" = "--help" ] || [ "$2" = "-help" ] || [ "$2" = "help" ];then help;else banner;checkDependencies;if ping -c 1 "$1" > /dev/null 2>&1;then if host "$1" > /dev/null 2>&1;then basicRecon "$1" "$2";else echo -e " No route to host, please verify your DNS server or internet connection";clean;fi;else echo -e " PING was not success, does server ignoring ICMP packets?";if host "$1" > /dev/null 2>&1;then echo -e " Running checks anyway\n";basicRecon "$1" "$2";else echo -e " No route to host, please verify your DNS server or internet connection";clean;fi;fi;fi;else echo -e " Invalid arguments ";help;tput cnorm;exit 1;fi
 
