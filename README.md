@@ -22,12 +22,17 @@ Ideal for **RedTeam** scenarios where a quick view of the internal or external D
 It is useful in initial and post-exploit enumeration phases on unix systems.
 
 # Usage
-
+You can use the script with the default DNS server defined by the system or service provider by using:
 ```bash
 ./DNSExplorer.sh <domain.name>
 ```
-
 ![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/basicRecon.png)
+If you can use a specific DNS server to resolve the query, use:
+```bash
+./DNSExplorer.sh <domain.name> <dns.server>
+```
+
+
 
 The script leaves few local traces that are hardly detected. It can also be run directly from github if you have an internet connection:
 
