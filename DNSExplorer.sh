@@ -114,10 +114,8 @@ dictionaryAttackCustom(){
         else
           echo -e "\n\e[1m$error Found $su subdomains.$end"
         fi
-
         check=1
         clean
-
       else
         echo -e "$error the file is not ASCII text. Can't use it."
       fi
