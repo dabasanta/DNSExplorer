@@ -2,6 +2,7 @@
 # @author: Danilo Basanta
 # @author-linkedin: https://www.linkedin.com/in/danilobasanta/
 # @author-github: https://github.com/dabasanta
+
 mkdir -p /tmp/dnsexplorer
 clean(){
   rm -rf /tmp/dnsecrecon;exit 0
