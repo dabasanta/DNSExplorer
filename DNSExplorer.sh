@@ -145,6 +145,14 @@ bruteForceDNS(){
     done
 }
 
+crtSH(){
+  domain_search=$1
+  echo -e "\n$info Finding subdomains - abusing Certificate Transparency Logs using https://crt.sh/\n$end"
+  curl -s "https://crt.sh/?q=${domain_search}&output=json" | jq .[].name_value | sed 's/"//g' | tr '\n' '\n'
+  echo -e "\n"
+
+}
+
 basicRecon(){
     echo -e "$info Finding IP address for A records \e[92m"
     host "$1" | grep 'has address' | awk '{print $4}'
@@ -155,7 +163,7 @@ basicRecon(){
         host "$1" | grep 'IPv6'| awk '{print $5}'
         echo -e ""
     else
-        echo -e "$question Hosts $1 has not IPv6 address\n" 
+        echo -e "$question Hosts $1 has not IPv6 address\n"
     fi
 
     echo -e "$info Finding mail server address for $1 domain \e[92m"
@@ -194,11 +202,13 @@ basicRecon(){
 
         if [[ "$DNS" == "DNS" ]];then
             echo -e "$output The domain $1 has a secure webserver and your certificate have these alternate domain names:\e[92m"
-            echo -n | openssl s_client -connect "$1:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:"| tr ',' '\n' | sed 's/\               //'
+            echo -n | openssl s_client -connect "$1:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:"| tr ',' '\n' | sed 's/\               //' | sed 's/\s//g' | sed 's/DNS://g'
             subjects=$(echo -n | openssl s_client -connect "$1:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:" | tr ',' '\n' | sed 's/\               //' | wc -l)
             echo -e "$output $subjects alternate DNS domain found.\n"
+            crtSH "$1"
         else
             echo -e "$question Domain $1 has secure website at $1:443, but does not have alternate subject names.\n"
+            crtSH "$1"
         fi
     else
         echo -e "$error No website found on $1:443\n"
