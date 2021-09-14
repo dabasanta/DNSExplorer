@@ -36,7 +36,7 @@ doZoneTransfer(){
 
   while IFS= read -r nameserver
   do
-  if host -l "$1" "$nameserver" | grep -i "has address" > /dev/null;then
+    if host -l "$1" "$nameserver" | grep -i "has address" > /dev/null;then
     echo -e "$green NameServer $nameserver accept ZoneTransfer$end\n"
       host -l "$1" "$nameserver" | grep -i "has address"
       success=0
