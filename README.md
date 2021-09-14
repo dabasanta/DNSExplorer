@@ -78,7 +78,19 @@ The functionality is the same: The script search in the [crt.sh](https://crt.sh/
 
 ![](https://github.com/dabasanta/DNSExplorer/blob/main/examples/crt.sh.png?raw=true)
 
-This works very well in the public-face of our target where PKI infrastructure is used. 
+This works very well in the public-face of our target where PKI infrastructure is used.
+
+## Save output to file
+To save output to a file, just redirect the STDOUT to the file by using '>' character.
+```bash
+./DNSExplorer.sh e-corp.evil >> results.txt
+```
+This saves the entire output with the color codes, to read the file and view with colors use __more__ command: ```more results.txt```
+
+If you want export the results in clear text use:
+```bash
+DNSExplorer-minimal.sh e-corp.evil >> results.txt
+``` 
 
 ## DNSExplorer-minimal
 
