@@ -31,9 +31,10 @@ If you can use a specific DNS server to resolve the query, use:
 ```bash
 ./DNSExplorer.sh <domain.name> <dns.server>
 ```
+![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/DNS_specificDNS.png)
+As you can see, with a specific DNS server you can to obtain more information about your target.
 
-
-
+## Paranoiac exec
 The script leaves few local traces that are hardly detected. It can also be run directly from github if you have an internet connection:
 
 ```bash
