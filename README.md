@@ -27,7 +27,8 @@ You can use the script with the default DNS server defined by the system or serv
 ./DNSExplorer.sh <domain.name>
 ```
 ![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/basicRecon.png)
-If you can use a specific DNS server to resolve the query, use:
+
+If you want to use a specific DNS server to resolve the query, use:
 ```bash
 ./DNSExplorer.sh <domain.name> <dns.server>
 ```
