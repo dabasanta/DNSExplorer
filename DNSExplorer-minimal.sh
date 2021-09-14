@@ -21,76 +21,18 @@ dictionaryAttackCustom(){
 check=0;while [ $check -eq 0 ];do echo -e "";read -rp "Enter the path of the dictionary file> " dfile ; echo -e "";if [ -f "$dfile" ];then istext=$(file "$dfile" | awk '{print $2}');if [[ $istext = "ASCII" ]];then l=$(wc -l "$dfile" | awk '{print $1}');co=1;su=0;while IFS= read -r sub;do if host "$sub"."$1" | head -1 | grep "has address"; then su=$((su+1));fi;echo -ne " Using entry: $co \e[1m\e[36mof \e[1m\e[36m$l. \r";co=$((co+1));done < <(grep -v '^ *#' < "$dfile");if [ $su -ge 1 ];then echo -e "\n\e[1m[+] Found $su subdomains.";else echo -e "\n\e[1m Found $su subdomains.";fi;check=1;clean;else echo -e " the file is not ASCII text. Can't use it.";fi;else echo -e " File $dfile does not exists.";fi;done
 }
 bruteForceDNS(){
-  echo -e " Fuzzing subdomains of $1 \n"
-  echo -e " Do yo want to use a custom dictionary? [C=custom/d=Default]"
-  echo -e " Default: Provides a dictionary with the top 1000 of the most commonly used subdomains.\nCustom: Use your own custom dictionary."
-
-  while true; do
-    echo -e ""
-    read -rp "[D/c]> " dc
-    echo -e ""
-
+echo -e " Fuzzing subdomains of $1 \n";echo -e " Do yo want to use a custom dictionary? [C=custom/d=Default]";echo -e " Default: Provides a dictionary with the top 1000 of the most commonly used subdomains.\nCustom: Use your own custom dictionary.";while true; do echo -e "";read -rp "[D/c]> " dc;echo -e ""
     case $dc in
       [Dd]* ) dictionaryAttack "$1"; break;;
       [Cc]* ) dictionaryAttackCustom "$1"; break;;
       * ) echo -e " Please answer D \e[1m\e[91mor\e[1m C\e[1m\e[91m.\n";;
-    esac
-  done
+    esac;done
 }
-
 crtSH(){
-  domain_search=$1
-  echo -e "\n Finding subdomains - abusing Certificate Transparency Logs using https://crt.sh/\n"
-  curl -s "https://crt.sh/?q=${domain_search}&output=json" | jq .[].name_value | sed 's/"//g' | tr '\n' '\n'
-  echo -e "\n"
+domain_search=$1;echo -e "\n Finding subdomains - abusing Certificate Transparency Logs using https://crt.sh/\n";curl -s "https://crt.sh/?q=${domain_search}&output=json" | jq .[].name_value | sed 's/"//g' | tr '\n' '\n';echo -e "\n"
 }
-
 basicRecon(){
-  echo -e " Finding IP address for A records \e[92m"
-
-  if [ -z "$2" ];then
-    host "$1" | grep 'has address' | awk '{print $4}'
-    echo -e ""
-  else
-    host "$1" "$2" | grep 'has address' | awk '{print $4}'
-    echo -e ""
-  fi
-
-  echo -e " Finding IPv6 address for AAA records \e[92m"
-
-  if [ -z "$2" ];then
-    if host "$1" | grep 'IPv6' >/dev/null 2>&1;then
-      host "$1" | grep 'IPv6'| awk '{print $5}'
-      echo -e ""
-    else
-      echo -e " Hosts $1 has not IPv6 address\n"
-    fi
-  else
-    if host "$1" "$2" | grep 'IPv6' >/dev/null 2>&1;then
-      host "$1" "$2" | grep 'IPv6'| awk '{print $5}'
-      echo -e ""
-    else
-      echo -e " Hosts $1 has not IPv6 address\n"
-    fi
-  fi
-
-  echo -e " Finding mail server address for $1 domain \e[92m"
-
-  if [ -z "$2" ];then
-    if host -t MX "$1" | grep 'mail' >/dev/null 2>&1;then
-      host "$1" | grep 'mail' | awk '{print $6,$7}'
-      echo -e ""
-    else
-      echo -e " Hosts $1 has not mail server records\n"
-    fi
-  else
-    if host -t MX "$1" "$2" | grep 'mail' >/dev/null 2>&1;then
-      host "$1" "$2" | grep 'mail' | awk '{print $6,$7}'
-      echo -e ""
-    else
-      echo -e " Hosts $1 has not mail server records\n"
-    fi
-  fi
+echo -e " Finding IP address for A records \e[92m";if [ -z "$2" ];then host "$1" | grep 'has address' | awk '{print $4}';echo -e "";else host "$1" "$2" | grep 'has address' | awk '{print $4}';echo -e "";fi;echo -e " Finding IPv6 address for AAA records \e[92m";if [ -z "$2" ];then if host "$1" | grep 'IPv6' >/dev/null 2>&1;then host "$1" | grep 'IPv6'| awk '{print $5}';echo -e "";else echo -e " Hosts $1 has not IPv6 address\n";fi;else if host "$1" "$2" | grep 'IPv6' >/dev/null 2>&1;then host "$1" "$2" | grep 'IPv6'| awk '{print $5}';echo -e "";else echo -e " Hosts $1 has not IPv6 address\n";fi;fi;echo -e " Finding mail server address for $1 domain \e[92m";if [ -z "$2" ];then if host -t MX "$1" | grep 'mail' >/dev/null 2>&1;then host "$1" | grep 'mail' | awk '{print $6,$7}';echo -e "";else echo -e " Hosts $1 has not mail server records\n";fi;else if host -t MX "$1" "$2" | grep 'mail' >/dev/null 2>&1;then host "$1" "$2" | grep 'mail' | awk '{print $6,$7}';echo -e "";else echo -e " Hosts $1 has not mail server records\n";fi;fi
 
   echo -e " Finding CNAME records for $1 domain \e[92m"
 
