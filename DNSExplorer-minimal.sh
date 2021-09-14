@@ -39,36 +39,10 @@ basicRecon(){
         * ) echo -e "[!!] Please answer yes or no.\n";;
     esac;done;fi;fi
 }
-
 help(){
     echo -e "\nDNSExplorer automates the enumeration of DNS servers and domains using the 'host' tool and the predefined DNS server in /etc/resolv.conf. To use it run: ./DNSExplorer.sh domain.com\n"
 }
-
 checkDependencies() {
     if ! command -v host &> /dev/null;then echo -e "[!!] 'host' command is not avaliable, please install the bind-utils/dnsutils package.";exit 1;fi;if ! command -v curl &> /dev/null;then echo -e "[!!] 'curl' command is not avaliable, please install the curl package.";exit 1;fi
 }
-
-if [ $# == 1 ];then
-    if [ $1 = "-h" ] || [ $1 = "help" ] || [ $1 = "--help" ] || [ $1 = "-help" ];then
-        help
-    elif [ $# == 1 ];then
-        checkDependencies
-        if ping -c 1 $1 >/dev/null 2>&1;then
-            if host $1 >/dev/null 2>&1;then
-                basicRecon $1
-            else
-                echo -e "[!!] No route to host, please verify your DNS server or internet connection";exit 1
-            fi
-        else
-            echo -e "[?] PING was not success, does server ignoring ICMP packets?"
-            if host $1 >/dev/null 2>&1;then
-                echo -e "[++] Running checks anyway\n"
-                basicRecon $1
-            else
-                echo -e "[!!] No route to host, please verify your DNS server or internet connection";exit 1
-            fi
-        fi
-    fi
-else
-    echo -e "[!!] Invalid arguments";help;exit 1
-fi
+if [ $# == 1 ];then if [ $1 = "-h" ] || [ $1 = "help" ] || [ $1 = "--help" ] || [ $1 = "-help" ];then help;elif [ $# == 1 ];then checkDependencies;if ping -c 1 $1 >/dev/null 2>&1;then if host $1 >/dev/null 2>&1;then basicRecon "$1";else echo -e "[!!] No route to host, please verify your DNS server or internet connection";exit 1;fi;else echo -e "[?] PING was not success, does server ignoring ICMP packets?";if host "$1" >/dev/null 2>&1;then echo -e "[++] Running checks anyway\n";basicRecon "$1";else echo -e "[!!] No route to host, please verify your DNS server or internet connection";exit 1;fi;fi;fi;else echo -e "[!!] Invalid arguments";help;exit 1;fi
