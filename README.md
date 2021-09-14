@@ -69,13 +69,16 @@ The script validates if it can connect to the domain using openssl against port 
 
 Port 443 is used by default because the vast majority of domains on the internet host their secure web service on that port. However, this can be changed in the script code for specific cases.
 
-## HTTPs subdomains by crt.sh
+## HTTPS subdomains by crt.sh
 More info about this in [certificate.transparency.dev](https://certificate.transparency.dev/).
 
 Thanks to [@UnaPibaGeek](https://github.com/UnaPibaGeek) by her tool written in python: [CTFR](https://github.com/UnaPibaGeek/ctfr).
+
 The functionality is the same: The script search in the [crt.sh](https://crt.sh/) database about the domain name that are auditing by DNSExplorer.sh
 
-![]()
+![](https://github.com/dabasanta/DNSExplorer/blob/main/examples/crt.sh.png?raw=true)
+
+This works very well in the public-face of our target where PKI infrastructure is used. 
 
 ## DNSExplorer-minimal
 
