@@ -328,7 +328,7 @@ elif [ $# == 2 ];then
 
     if ping -c 1 "$1" > /dev/null 2>&1;then
         if host "$1" > /dev/null 2>&1;then
-            basicRecon "$1"
+            basicRecon "$1" "$2"
         else
             echo -e "$error No route to host, please verify your DNS server or internet connection$end"
             clean
@@ -337,7 +337,7 @@ elif [ $# == 2 ];then
         echo -e "$question PING was not success, does server ignoring ICMP packets?$end"
         if host "$1" > /dev/null 2>&1;then
             echo -e "$info Running checks anyway$end\n"
-            basicRecon "$1"
+            basicRecon "$1" "$2"
 
         else
             echo -e "$error No route to host, please verify your DNS server or internet connection$end"
