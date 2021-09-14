@@ -48,101 +48,101 @@ doZoneTransfer(){  # Perform zone transfer attack using recently discovered dns 
 }
 
 dictionaryAttack(){
-    tput civis
-    echo -e "\n$output Using the first 1.000 records of the dictionary:$green https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt\n\e[1m\e[36mCourtesy of seclists ;)$end\n"
-    curl -s https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt -o /tmp/dnsexplorer/bit.txt
+  tput civis
+  echo -e "\n$output Using the first 1.000 records of the dictionary:$green https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt\n\e[1m\e[36mCourtesy of seclists ;)$end\n"
+  curl -s https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt -o /tmp/dnsexplorer/bit.txt
 
-    if [ -f /tmp/dnsexplorer/bit.txt ];then
-        # shellcheck disable=SC2002
-        cat /tmp/dnsexplorer/bit.txt | head -1000 > /tmp/dnsexplorer/bitquark.txt
+  if [ -f /tmp/dnsexplorer/bit.txt ];then
+    # shellcheck disable=SC2002
+    cat /tmp/dnsexplorer/bit.txt | head -1000 > /tmp/dnsexplorer/bitquark.txt
 
-        l=$(wc -l /tmp/dnsexplorer/bitquark.txt | awk '{print $1}')
-        c=1
-        s=0
+    l=$(wc -l /tmp/dnsexplorer/bitquark.txt | awk '{print $1}')
+    c=1
+    s=0
 
-        while IFS= read -r fqdn
-        do
-          # shellcheck disable=SC2086
-          if host "$fqdn"."$1" | head -1 | grep "has address";then
-            s=$((s+1))
-          fi
+    while IFS= read -r fqdn
+    do
+      # shellcheck disable=SC2086
+      if host "$fqdn"."$1" | head -1 | grep "has address";then
+        s=$((s+1))
+      fi
 
-          echo -ne "$output Using entry: $green$c$end \e[1m\e[36mof \e[1m\e[36m$l.$end \r"
-          c=$((c+1))
-        done < <(grep -v '^ *#' < /tmp/dnsexplorer/bitquark.txt)
+      echo -ne "$output Using entry: $green$c$end \e[1m\e[36mof \e[1m\e[36m$l.$end \r"
+      c=$((c+1))
+    done < <(grep -v '^ *#' < /tmp/dnsexplorer/bitquark.txt)
 
-        # shellcheck disable=SC1087
-        if [ $s -ge 1 ];then
-          echo -e "\n\e[1m$green[+] Found $s subdomains.$end"
-        else
-          echo -e "\n\e[1m$error[!!] Found $s subdomains.$end"
-        fi
+    # shellcheck disable=SC1087
+    if [ $s -ge 1 ];then
+      echo -e "\n\e[1m$green[+] Found $s subdomains.$end"
     else
-        echo -e "$error Could not download dictionary from seclists url.$end"
-        clean
+      echo -e "\n\e[1m$error[!!] Found $s subdomains.$end"
     fi
+  else
+    echo -e "$error Could not download dictionary from seclists url.$end"
+    clean
+  fi
 }
 
 dictionaryAttackCustom(){
-    check=0
-    while [ $check -eq 0 ];do
-        echo -e "$question"
-        read -rp "Enter the path of the dictionary file> " dfile ; echo -e "$end"
+  check=0
+  while [ $check -eq 0 ];do
+    echo -e "$question"
+    read -rp "Enter the path of the dictionary file> " dfile ; echo -e "$end"
 
-        if [ -f "$dfile" ];then
-            istext=$(file "$dfile" | awk '{print $2}')
+    if [ -f "$dfile" ];then
+      istext=$(file "$dfile" | awk '{print $2}')
 
-            if [[ $istext = "ASCII" ]];then
-                l=$(wc -l "$dfile" | awk '{print $1}')
-                co=1
-                su=0
+      if [[ $istext = "ASCII" ]];then
+        l=$(wc -l "$dfile" | awk '{print $1}')
+        co=1
+        su=0
 
-                while IFS= read -r sub
-                do
-                  if host "$sub"."$1" | head -1 | grep "has address"; then
-                    su=$((su+1))
-                  fi
+        while IFS= read -r sub
+        do
+          if host "$sub"."$1" | head -1 | grep "has address"; then
+            su=$((su+1))
+          fi
 
-                  echo -ne "$output Using entry: $green$co$end \e[1m\e[36mof \e[1m\e[36m$l.$end \r"
-                  co=$((co+1))
-                done < <(grep -v '^ *#' < "$dfile")
+          echo -ne "$output Using entry: $green$co$end \e[1m\e[36mof \e[1m\e[36m$l.$end \r"
+          co=$((co+1))
+        done < <(grep -v '^ *#' < "$dfile")
 
-                if [ $su -ge 1 ];then
-                  # shellcheck disable=SC1087
-                  echo -e "\n\e[1m$green[+] Found $su subdomains.$end"
-                else
-                  echo -e "\n\e[1m$error Found $su subdomains.$end"
-                fi
-
-                check=1
-                clean
-
-            else
-                echo -e "$error the file is not ASCII text. Can't use it."
-            fi
-
+        if [ $su -ge 1 ];then
+          # shellcheck disable=SC1087
+          echo -e "\n\e[1m$green[+] Found $su subdomains.$end"
         else
-            echo -e "$error File $dfile does not exists."
+          echo -e "\n\e[1m$error Found $su subdomains.$end"
         fi
-    done
+
+        check=1
+        clean
+
+      else
+        echo -e "$error the file is not ASCII text. Can't use it."
+      fi
+
+    else
+      echo -e "$error File $dfile does not exists."
+    fi
+  done
 }
 
 bruteForceDNS(){
-    echo -e "$output Fuzzing subdomains of $1 $end\n"
-    echo -e "$question Do yo want to use a custom dictionary? [C=custom/d=Default]$end"
-    echo -e "$info Default: Provides a dictionary with the top 1000 of the most commonly used subdomains.\nCustom: Use your own custom dictionary."
+  echo -e "$output Fuzzing subdomains of $1 $end\n"
+  echo -e "$question Do yo want to use a custom dictionary? [C=custom/d=Default]$end"
+  echo -e "$info Default: Provides a dictionary with the top 1000 of the most commonly used subdomains.\nCustom: Use your own custom dictionary."
 
-    while true; do
-        echo -e "$question"
-        read -rp "[D/c]> " dc
-        echo -e "$end"
+  while true; do
+    echo -e "$question"
+    read -rp "[D/c]> " dc
+    echo -e "$end"
 
-        case $dc in
-            [Dd]* ) dictionaryAttack "$1"; break;;
-            [Cc]* ) dictionaryAttackCustom "$1"; break;;
-            * ) echo -e "$error Please answer$green D$end \e[1m\e[91mor$end$green\e[1m C$end\e[1m\e[91m.$end\n";;
-        esac
-    done
+    case $dc in
+      [Dd]* ) dictionaryAttack "$1"; break;;
+      [Cc]* ) dictionaryAttackCustom "$1"; break;;
+      * ) echo -e "$error Please answer$green D$end \e[1m\e[91mor$end$green\e[1m C$end\e[1m\e[91m.$end\n";;
+    esac
+  done
 }
 
 crtSH(){
@@ -264,7 +264,7 @@ basicRecon(){
       host -t NS "$1" | cut -d " " -f 4 > /tmp/dnsexplorer/NameServers.txt
       ns=$(wc -l /tmp/dnsexplorer/NameServers.txt | awk '{print $1}')
       echo -e "\n$output $ns DNS Servers was found, trying ZoneTransfer on these servers$end"
-
+# Por aqui vamos...
       if doZoneTransfer "$1";then
         echo -e "\n$ok DNS zone transfer was possible, no bruteforce attacks on the subdomains are required. $end\n"
         clean
@@ -292,7 +292,7 @@ basicRecon(){
       host -t NS "$1" "$2" | cut -d " " -f 4 > /tmp/dnsexplorer/NameServers.txt
       ns=$(wc -l /tmp/dnsexplorer/NameServers.txt | awk '{print $1}')
       echo -e "\n$output $ns DNS Servers was found, trying ZoneTransfer on these servers$end"
-#
+# Por aqui vamos...
       if doZoneTransfer "$1";then
         echo -e "\n$ok DNS zone transfer was possible, no bruteforce attacks on the subdomains are required. $end\n"
         clean
