@@ -287,8 +287,8 @@ basicRecon(){
     fi
   else
     if host -t NS "$1" "$2" | grep 'name server' >/dev/null 2>&1;then
-      host -t NS "$1" "$2" | cut -d " " -f 4
-      host -t NS "$1" "$2" | cut -d " " -f 4 > /tmp/dnsexplorer/NameServers.txt
+      host -t NS "$1" "$2" | grep 'name server' | cut -d " " -f 4
+      host -t NS "$1" "$2" | grep 'name server' | cut -d " " -f 4 > /tmp/dnsexplorer/NameServers.txt
       ns=$(wc -l /tmp/dnsexplorer/NameServers.txt | awk '{print $1}')
       echo -e "\n$output $ns DNS Servers was found, trying ZoneTransfer on these servers$end"
 
