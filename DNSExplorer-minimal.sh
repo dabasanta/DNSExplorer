@@ -32,22 +32,12 @@ basicRecon(){
     echo -e "[+] Finding nameserver address for $1 domain"
     if host -t NS $1 | grep 'name server' >/dev/null 2>&1;then
         host -t NS $1 | cut -d " " -f 4;host -t NS $1 | cut -d " " -f 4 > /tmp/dnsexplorer/NameServers.txt
-        ns=$(wc -l /tmp/dnsexplorer/NameServers.txt | awk '{print $1}')
-        echo -e "\n $ns DNS Servers was found, trying ZoneTransfer on these servers"
-        if doZoneTransfer $1;then
-            echo -e "\nDNS zone transfer was possible, no bruteforce attacks on the subdomains are required.\n";clean
-        else
-            echo -e "\n[!!] DNS zone transfer was not possible, DNS servers are not accept it"
-            while true; do
-                echo "";read -p "Do you want to brute force subdomains? [Y/n]> " yn
-                case $yn in
-                    [Yy]* ) bruteForceDNS $1; break;;
-                    [Nn]* ) clean;;
-                    * ) echo -e "[!!] Please answer yes or no.\n";;
-                esac
-            done
-        fi
-    fi
+        ns=$(wc -l /tmp/dnsexplorer/NameServers.txt | awk '{print $1}');echo -e "\n $ns DNS Servers was found, trying ZoneTransfer on these servers";if doZoneTransfer $1;then echo -e "\nDNS zone transfer was possible, no bruteforce attacks on the subdomains are required.\n";clean;else echo -e "\n[!!] DNS zone transfer was not possible, DNS servers are not accept it";while true; do echo "";read -rp "Do you want to brute force subdomains? [Y/n]> " yn
+    case $yn in
+        [Yy]* ) bruteForceDNS $1; break;;
+        [Nn]* ) clean;;
+        * ) echo -e "[!!] Please answer yes or no.\n";;
+    esac;done;fi;fi
 }
 
 help(){
