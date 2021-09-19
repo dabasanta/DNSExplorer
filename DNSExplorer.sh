@@ -147,7 +147,12 @@ bruteForceDNS(){
 crtSH(){
   domain_search=$1
   echo -e "\n$info Finding subdomains - abusing Certificate Transparency Logs using https://crt.sh/\n$end"
-  curl -s "https://crt.sh/?q=${domain_search}&output=json" | jq .[].name_value | sed 's/"//g' | tr '\n' '\n'
+  curl -s "https://crt.sh/?q=${domain_search}&output=json" -o /dev/null 2>&1
+  if [ $? ];then
+    curl -s "https://crt.sh/?q=${domain_search}&output=json" | jq .[].name_value | sed 's/"//g' | tr '\n' '\n'
+  else
+    echo -e "$error Unable to connect to CTR.sh $end"
+  fi
   echo -e "\n"
 }
 
