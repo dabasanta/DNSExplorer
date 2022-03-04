@@ -149,7 +149,10 @@ crtSH(){
   echo -e "\n$info Finding subdomains - abusing Certificate Transparency Logs using https://crt.sh/\n$end"
   curl -s "https://crt.sh/?q=${domain_search}&output=json" -o /dev/null 2>&1
   if [ $? ];then
-    curl -s "https://crt.sh/?q=${domain_search}&output=json" | jq .[].name_value | sed 's/"//g' | tr '\n' '\n'
+    curl -s "https://crt.sh/?q=${domain_search}&output=json" | sed 's/,/\n/g' | grep 'common_name' | cut -d : -f 2 | sed 's/"//g' | sed 's/\\n/\n/g' > /tmp/dnsexplorer/crt.sh.reg
+    echo -e $ok
+    sort /tmp/dnsexplorer/crt.sh.reg | uniq 
+    echo -e $end
   else
     echo -e "$error Unable to connect to CTR.sh $end"
   fi
@@ -365,7 +368,7 @@ banner(){
         ░ ▒  ▒ ░ ░░   ░ ▒░░ ░▒  ░ ░ ░ ░  ░░░   ░▒ ░░▒ ░     ░ ░ ▒  ░  ░ ▒ ▒░   ░▒ ░ ▒░ ░ ░  ░  ░▒ ░ ▒░
         ░ ░  ░    ░   ░ ░ ░  ░  ░     ░    ░    ░  ░░         ░ ░   ░ ░ ░ ▒    ░░   ░    ░     ░░   ░ 
         ░             ░       ░     ░  ░ ░    ░               ░  ░    ░ ░     ░        ░  ░   ░     
-        ░ v:1.0.0     ░$end By: Danilo Basanta (https://github.com/dabasanta/) | (https://www.linkedin.com/in/danilobasanta/)\n\n"
+        ░ v:1.0.1     ░$end By: Danilo Basanta (https://github.com/dabasanta/) | (https://www.linkedin.com/in/danilobasanta/)\n\n"
 
 }
 
