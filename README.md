@@ -12,7 +12,6 @@ Its goal is enum the domains and subdomains using the default server in the revo
 - cURL
 - host (dnsutils / bind-utils)
 - ping (net-tools)
-- jq (Cmd JSON processor)
 
 ## Use cases
 
