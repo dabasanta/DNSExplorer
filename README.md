@@ -12,12 +12,14 @@ Its goal is enum the domains and subdomains using the default server in the revo
 - cURL
 - host (dnsutils / bind-utils)
 - ping (net-tools)
+- bc
 
 ## Use cases
 
 Ideal for **RedTeam** scenarios where a quick view of the internal or external DNS network landscape is required.
 
 ![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/BasicRecon2.png)
+
 It is useful in initial and post-exploit enumeration phases on unix systems.
 
 # Usage
@@ -55,9 +57,9 @@ After discovering the DNS servers behind a domain, the script tries to do an *AX
 
 In case all servers fail and zone transfer is not possible, or *DNSSec* is enabled, the script will automatically switch to brute force function.
 
-## BruteForce
+## Dictionary Attack
 
-**Automatic:** The brute force function takes [danielmiessler](https://github.com/danielmiessler/) dictionary: [bitquark-subdomains-top100000.txt](https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt) And it cuts it to 1,000 records.
+**Automatic:** The DictionaryAttack function takes [danielmiessler](https://github.com/danielmiessler/) dictionary: [bitquark-subdomains-top100000.txt](https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt) And it cuts it to 1,000 records.
 This corresponds to the top 1,000 of the most used subdomains globally by organizations.
 
 **Custom:** In case you have a custom dictionary and you want to fuzz the subdomains with information taken from your information gathering phase, you can specify the file path.
@@ -77,7 +79,7 @@ Port 443 is used by default because the vast majority of domains on the internet
 
 ## HTTPS subdomains by crt.sh
 More info about this in [certificate.transparency.dev](https://certificate.transparency.dev/).
-
+![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/crt.sh.2.png)
 Thanks to [@UnaPibaGeek](https://github.com/UnaPibaGeek) by her tool written in python: [CTFR](https://github.com/UnaPibaGeek/ctfr).
 
 The functionality is the same: The script search in the [crt.sh](https://crt.sh/) database about the domain name that are auditing by DNSExplorer.sh
@@ -86,8 +88,21 @@ The functionality is the same: The script search in the [crt.sh](https://crt.sh/
 
 This works very well in the public-face of our target where PKI infrastructure is used.
 
+## HTTP finder
+DNSExplorer consolidates the data collected throughout the different stages of the recon, generating a list of targets to find potential web servers on common HTTP/s ports (80, 443).
+
+![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/HTTP.finder.png)
+
+Web servers/applications are juicy targets during the red team, they usually provide a lot of information about the target and represent a potential entry point to the target's internal components, such as initial intrusions to servers, databases, and so on. 
+
 ## Save output to file
-To save output to a file, just redirect the STDOUT to the file by using '>' character.
+The script automatically saves the most relevant information in a folder called <domain.out>, the resulting files are the following:
+- subdomains.txt: Subdomains obtained from crt.sh.
+- wildcard.txt: Wildcard subdomains obtained from crt.sh.
+- all.txt: The previous files without wildcard mask *.
+- webservers.txt: Target public webservers/apps.
+
+To save full output to a file, just redirect the STDOUT to the file by using '>' character.
 ```bash
 ./DNSExplorer.sh e-corp.evil >> results.txt
 ```
