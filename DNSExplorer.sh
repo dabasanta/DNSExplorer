@@ -232,7 +232,7 @@ crtSH(){ # Abuse of crt.sh website - Internet connection required.
 
     # Consolidate all data in single file
     cat $subdomain_wildcard_file | sed 's/*\.//g' > $tmpdir/0.txt
-    cat $dictionary_results > $tmpdir/1.txt
+    cat $dictionary_results > $tmpdir/1.txt 2>/dev/null
     cat $subdomain_file > $tmpdir/2.txt
     cat $tmpdir/1.txt $tmpdir/2.txt > $tmpdir/merged.txt
     cat $tmpdir/0.txt >> $tmpdir/merged.txt
