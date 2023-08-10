@@ -388,6 +388,7 @@ checkDependencies() { # Check dependencies: curl, host, parallel.
     ["host"]="bind-utils/dnsutils"
     ["curl"]="curl"
     ["parallel"]="Parallel"
+    ["bc"]="BC"
   )
 
   for cmd in "${!dependencies[@]}"; do
