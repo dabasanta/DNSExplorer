@@ -85,29 +85,18 @@ dictionaryAttack(){ # Performs a dictionary attack agains the target
   echo -e "\n$info Using the first 1.000 records of the dictionary:$green https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt\n\e[1m\e[36mCourtesy of seclists ;)\nTake it slow and go for coffe.$end\nThe obtained data will be written to the temporary directory and will be saved to disk when the script execution is completely finished.\n"
   curl -s https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt -o $bitquark
   l_bitq=$(cat $bitquark | wc -l)
+  
   if [ $l_bitq -gt 999 ];then
-    # shellcheck disable=SC2002
     cat $bitquark | head -1000  > $dicc
 
-    l=$(wc -l $dicc | awk '{print $1}')
-    c=1
-    s=0
-
-    while IFS= read -r fqdn;do
-      # shellcheck disable=SC2086
-      if host "$fqdn"."$1" | head -1 | grep "has address" && echo "$fqdn.$1" >> $dicc_outfile;then
-        s=$((s+1))
-      fi
-      echo -ne "$output_color Using entry: $green$c$end \e[1m\e[36mof \e[1m\e[36m$l.$end \r"
-      c=$((c+1))
-    done < <(grep -v '^ *#' < $dicc)
-
-    # shellcheck disable=SC1087
-    if [ $s -ge 1 ];then
-      echo -e "\n\e[1m$green[+] Found $s subdomains.$end"
-    else
-      echo -e "\n\e[1m$error[!!] Found $s subdomains.$end"
+    grep -v '^ *#' < "$dicc" | xargs -P 10 -I {} sh -c '
+    sub="$1"
+    if host "$sub.$2" | head -1 | grep -q "has address"; then
+      echo "$sub.$2" >> "$3"
+      printf ".... Subdomain found: %s.%s\n" "$sub" "$2"
     fi
+    printf "[~] Reading file... \r"
+  ' _ {} "$1" "$dicc_outfile"
   else
     echo -e "$error Could not download dictionary from seclists url.$end"
     dictionaryAttackCustom "$1"
