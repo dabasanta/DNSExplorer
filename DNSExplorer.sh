@@ -9,7 +9,7 @@ info="\e[1m\e[36m[+]"
 cyan="\e[1m\e[36m"
 output_color="\e[0m\e[36m[++]"
 error="\e[1m\e[91m[!!]"
-question="\e[1m\e[93m[?]"
+question="\e[1m\e[93m"
 yellow="\e[1m\e[93m"
 green="\e[92m"
 ok="\e[1m\e[92m"
@@ -37,47 +37,42 @@ trap scape INT
 mkdir -p $1.out
 output="$1.out"
 
-dictionaryAttackCustom(){
-  dicc_outfile="$tmpdir/dicctionary.results.txt"
-  echo "" > $dicc_outfile
+dictionaryAttackCustom() {
+  dicc_outfile="$tmpdir/dictionary.results.txt"
+  : > "$dicc_outfile"
+
   check=0
-  while [ $check -eq 0 ];do
+  while [ "$check" -eq 0 ]; do
     echo -e "$question"
-    read -rp "Enter the path of the dictionary file> " dfile ; echo -e "$end"
+    read -rp "Ingrese la ruta del archivo de diccionario> " dfile
+    echo -e "$end"
 
-    if [ -f "$dfile" ];then
-      istext=$(file "$dfile" | awk '{print $2}')
-      if [[ $istext = "ASCII" ]];then
-        l=$(wc -l "$dfile" | awk '{print $1}')
-        co=1
-        su=0
-        tput civis
-        echo "$info Take it slow and go for coffe.\nThe obtained data will be written to the temporary directory and will be saved to disk when the script execution is completely finished.\n"
-        while IFS= read -r sub
-        do
-          if host "$fqdn"."$1" | head -1 | grep "has address" && echo "$fqdn.$1" >> $dicc_outfile;then
-            su=$((su+1))
-          fi
-          echo -ne "$output_color Using entry: $green$co$end \e[1m\e[36mof \e[1m\e[36m$l.$end \r"
-          co=$((co+1))
-        done < <(grep -v '^ *#' < "$dfile")
-
-        if [ $su -ge 1 ];then
-          # shellcheck disable=SC1087
-          echo -e "\n\e[1m$green[+] Found $su subdomains.$end"
-        else
-          echo -e "\n\e[1m$error Found $su subdomains.$end"
-        fi
-        check=1
-      else
-        echo -e "$error the file is not ASCII text. Can't use it."
-        break
-      fi
+    if [ ! -f "$dfile" ] || [[ $(file "$dfile" | awk '{print $2}') != @(ASCII|Unicode) ]]; then
+      echo -e "$error El archivo $dfile no existe o no es un archivo de texto ASCII/Unicode."
     else
-      echo -e "$error File $dfile does not exists."
-      break
+      check=1
     fi
   done
+
+  lon_dicc=$(wc -l < "$dfile")
+  tput civis
+
+  echo -e "$info Using the dictionary '$dfile'. The process may take some time depending on the number of records.\n"
+  echo -e "$question\tThis file has $lon_dicc records, 20 parallel processes will be used to speed up the attack, press any key to start\n"
+  read -n 1 -s -r -p ""
+
+  grep -v '^ *#' < "$dfile" | xargs -P 20 -I {} sh -c '
+    sub="$1"
+    if host "$sub.$2" | head -1 | grep -q "has address"; then
+      echo "$sub.$2" >> "$3"
+      printf ".... Subdomain found: %s.%s\n" "$sub" "$2"
+    fi
+    printf "[~] Reading file... \r"
+  ' _ {} "$1" "$dicc_outfile"
+
+  total=$(wc -l $dicc_outfile)
+  echo -e "$info $total Subdomains found.$end"
+  sleep 5s
   dnsWebServersEnum "$1"
 }
 
