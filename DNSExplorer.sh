@@ -105,15 +105,29 @@ dictionaryAttack(){ # Performs a dictionary attack agains the target
 }
 
 bruteForceDNS(){ # Trigger the dictorinary attack
-  echo -e "$output_color Fuzzing subdomains of $1 $end\n"
-  echo -e "$question Do yo want to use a custom dictionary? [C=custom/d=Default]$end"
-  echo -e "$info Default: Provides a dictionary with the top 1000 of the most commonly used subdomains.\nCustom: Use your own custom dictionary."
+
+  echo -e " 
+  ██████╗ ██╗ ██████╗ ██████╗████████╗██╗ ██████╗ ███╗   ██╗ █████╗ ██████╗ ██╗   ██╗
+  ██╔══██╗██║██╔════╝██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║██╔══██╗██╔══██╗╚██╗ ██╔╝
+  ██║  ██║██║██║     ██║        ██║   ██║██║   ██║██╔██╗ ██║███████║██████╔╝ ╚████╔╝ 
+  ██║  ██║██║██║     ██║        ██║   ██║██║   ██║██║╚██╗██║██╔══██║██╔══██╗  ╚██╔╝  
+  ██████╔╝██║╚██████╗╚██████╗   ██║   ██║╚██████╔╝██║ ╚████║██║  ██║██║  ██║   ██║   
+  ╚═════╝ ╚═╝ ╚═════╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   
+                                                                                     
+                   █████╗ ████████╗████████╗ █████╗  ██████╗██╗  ██╗                 
+                  ██╔══██╗╚══██╔══╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝                 
+                  ███████║   ██║      ██║   ███████║██║     █████╔╝                  
+                  ██╔══██║   ██║      ██║   ██╔══██║██║     ██╔═██╗                  
+                  ██║  ██║   ██║      ██║   ██║  ██║╚██████╗██║  ██╗                 
+                  ╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝                 
+                                                                                     
+  \n\t\t$output_color Fuzzing subdomains of $1[++]$end\n
+  ${question}Do yo want to use a custom dictionary? [c=custom/d=default]$end
+  $info Default: Provides a dictionary with the top 1000 of the most commonly used subdomains.
+  $info Custom: Use your own custom dictionary.$question\n"
 
   while true; do
-    echo -e "$question"
-    read -rp "[D/c]> " dc
-    echo -e "$end"
-
+    read -rp "[d/c]> " dc
     case $dc in
       [Dd]* ) dictionaryAttack "$1"; break;;
       [Cc]* ) dictionaryAttackCustom "$1"; break;;
@@ -122,51 +136,29 @@ bruteForceDNS(){ # Trigger the dictorinary attack
   done
 }
 
-checkHTTPServers(){ # Check HTTP/s server in crtSH results
-  # Some init tasks
-  tput civis
-  domains=$1
-  root_domain=$2
-  count_domains=$(cat $domains | wc -l)
-  echo "" > $output/$root_domain.webservers && webservers_outfile="$output/$root_domain.webservers"
-  echo -e "$info Lodaed $count_domains targets...\n${ok}\nThis output will be saved to $resalted_output'$webservers_outfile'$ok file. Keep calm and go for a beer\n\n"
-  round=0
-  servers=0
+check_web_server() {
+  local end="\e[0m"
+  local cyan="\e[1m\e[36m"
+  local ok="\e[1m\e[92m"
+  local resalted_output="\e[1;37m"
+  local domain="$1"
+  local protocol="$2"
+  local webservers_outfile="$3"
+  local response=$(curl -m 3 --head --silent --output /dev/null --write-out '%{http_code}' "${protocol}://${domain}")
 
-  while read domain;do
-    round=$((round+1))
-    response=$(curl -m 3 --head --silent --output /dev/null --write-out '%{http_code}' $domain) # Make an HTTP HEAD request for the URL and save the result in a variable
-
-    if (($response >= 100 && $response <= 599)); then # Check if the response is 200 (OK)
-      echo -e "${ok}The domain $resalted_output$domain$ok has a web server. [HTTP:$response]"
-      echo "$domain" >> $webservers_outfile
-      servers=$((servers+1))
-    else
-      response=$(curl -m 3 --head --silent --output /dev/null --write-out '%{http_code}' https://$domain) # Make an HTTPS HEAD request for the URL and save the result in a variable
-      
-      if (($response >= 100 && $response <= 599)); then # Check if the response is 200 (OK)
-        echo -e "${ok}The domain $resalted_output$domain$ok has a web server. [HTTPS:$response]"
-        echo "https://$domain" >> $webservers_outfile
-        servers=$((servers+1))
-      fi
-    fi
-    percent_print=$(echo "scale=2; ($round / $count_domains) * 100" | bc)
-    rest=$(echo "$count_domains - $round" | bc)
-    echo -ne "$yellow[$percent_print%] $servers found - $rest remaining domains \r"
-  done < $domains
-  sed -i '/^$/d' $webservers_outfile
-  echo ""
-  echo -e "\n\n$info Output files"
-  echo -e "${resalted_output}$output/$root_domain.subdomains.txt$yellow\t Subdomains obtained from crt.sh."
-  echo -e "${resalted_output}$output/$root_domain.wildcard.txt$yellow\t Wildcard subdomains obtained from crt.sh."
-  echo -e "${resalted_output}$output/$root_domain-all.txt$yellow\t The previous files without wildcard mask *."
-  echo -e "${resalted_output}$output/$root_domain.webservers.txt$yellow\t Public web servers/apps from $root_domain domain."
-
-  clean
+  if ((response >= 100 && response <= 599)); then
+    local secure=""
+    local protocol_upper=$(echo "$protocol" | tr '[:lower:]' '[:upper:]')
+    [ "$protocol" == "https" ] && secure=" secure"
+    echo -e "${end}The domain $resalted_output$domain$end has a$secure web server. [$cyan$protocol_upper$end:$ok$response$end]"
+    echo "${protocol}://$domain" >> "$webservers_outfile"
+    return 1
+  fi
+  return 0
 }
+export -f check_web_server
 
 crtSH(){ # Abuse of crt.sh website - Internet connection required.
-  # Some initial task
   dictionary_results="$tmpdir/dicctionary.results.txt"
   domain_search=$1
   crtshoutput="$tmpdir/crtsh-output.txt"
@@ -179,39 +171,26 @@ crtSH(){ # Abuse of crt.sh website - Internet connection required.
 
   # Starting crt.sh connection
   curl -sk "https://crt.sh/?q=${domain_search}&output=json" -o $crtshoutput 2>&1
-  if [ $? ];then # Validate crt.sh connection...
+  if [ $? ];then
     # Getting entire output list
     cat $crtshoutput | sed 's/,/\n/g' | grep 'common_name' | cut -d : -f 2 | sed 's/"//g' | sed 's/\\n/\n/g' > $crtsh_parsed_output
-    echo -e "$ok"
+    #echo -e "$ok"
     size_crtsh_output=$(cat $crtsh_parsed_output | sort -u | wc -l) # Size of output list 
     cat $crtsh_parsed_output | grep '*.' >/dev/null 2>&1
+    
     if [ $? ];then # If the domain has subdmians, then...
-
       crtsh_parsed_output_wildard_size=$(cat $crtsh_parsed_output | sort -u | grep '*.' | wc -l) # Size of output list - only wilcard
       crtsh_parsed_output_no_wildard_size=$(cat $crtsh_parsed_output | sort -u | grep -v '*.' | wc -l) # Size of output list - without wilcard
-
-      cat $crtsh_parsed_output | sort -u | sed 's/*\.//g' # Show output list without wildcard items
-      echo -e "\n$info The complete record will be saved in the $green'$subdomain_file'$cyan file."
-      cat $crtsh_parsed_output | sort -u | sed 's/*\.//g' > $subdomain_file
-
-      echo -e "\n$question $green$crtsh_parsed_output_wildard_size$yellow subdomains with wildcard $green(*.<subdomain>.$domain_search)$yellow masks have been found. It is possible that there are more third or fourth level subdomains behind these masks."
-      echo -e "$green" && cat $crtsh_parsed_output | grep '*.' | sort -u # Show output list - only wildcard items
-      echo -e "\n$info Complete output will be saved in the $green'$subdomain_wildcard_file'$cyan file."
-      cat $crtsh_parsed_output | grep '*.' | sort -u > $subdomain_wildcard_file
-
-      echo -e "\n$info CRTsh results"
+      cat $crtsh_parsed_output | sort -u | sed 's/*\.//g' > $subdomain_file # Save subdomains without wildcard
+      cat $crtsh_parsed_output | grep '*.' | sort -u > $subdomain_wildcard_file # save subdomains with wildcard
       echo -e "$ok[$resalted_output$crtsh_parsed_output_no_wildard_size$ok] subdomain found"
       echo -e "$ok[$resalted_output$crtsh_parsed_output_wildard_size$ok] wildcard subdomains found"
       echo -e "$ok[$resalted_output$size_crtsh_output$ok] total subdomains"
 
     else # if domian don't have wildcard subdomains, then...
-      
-      cat $crtsh_parsed_output | sort -u # Show output full output list
-      echo -e "\n$info The complete record will be saved in the $green'$subdomain_file'$cyan file."
+
       cat $crtsh_parsed_output | sort -u > $subdomain_file
-
       echo -e "$info CRTsh results\n[$size_crtsh_output] total subdomains found"
-
     fi
 
     # Consolidate all data in single file
@@ -222,16 +201,55 @@ crtSH(){ # Abuse of crt.sh website - Internet connection required.
     cat $tmpdir/0.txt >> $tmpdir/merged.txt
     sed -i '/^$/d' $tmpdir/merged.txt
     cp $tmpdir/merged.txt $final_outputfile
+    
+    count_domains=$(wc -l < "$final_outputfile")
+    threads=$(echo "scale=0; ($count_domains * 0.15 + 0.5)/1" | bc)
+    [ "$threads" -lt 1 ] && threads=1
+    echo "" > $output/$domain_search.webservers && webservers_outfile="$output/$domain_search.webservers"
+    echo -e "$info Lodaed $count_domains targets...$end\n\n"
+    round=0
+    servers=0
 
-    echo -e "\n\n$info Some subdomains may contain applications or web servers. DNSExplorer provides fast and easy functionality to discover web servers on the most common ports (80, 443)."
-    checkHTTPServers "$final_outputfile" "$domain_search"
+    while read -r domain; do
+      ((round++))
+      parallel -j "$threads" check_web_server ::: "$domain" ::: http https ::: "$webservers_outfile"
+      ((servers += $?))
+
+      percent_print=$(printf "%.2f" "$(echo "$round / $count_domains * 100" | bc -l)")
+      rest=$((count_domains - round))
+      echo -ne "$yellow[$percent_print%] $servers found - $rest remaining domains \r"
+    done < "$final_outputfile"
 
   else
-    echo -e "$error Unable to connect to CTR.sh $end"
-    checkHTTPServers "$final_outputfile" "$domain_search"
+    echo -e "$error Unable to connect to CTR.sh$end"
+    # Consolidate all data in single file
+    cat $subdomain_wildcard_file | sed 's/*\.//g' > $tmpdir/0.txt
+    cat $dictionary_results > $tmpdir/1.txt 2>/dev/null
+    cat $subdomain_file > $tmpdir/2.txt
+    cat $tmpdir/1.txt $tmpdir/2.txt > $tmpdir/merged.txt
+    cat $tmpdir/0.txt >> $tmpdir/merged.txt
+    sed -i '/^$/d' $tmpdir/merged.txt
+    cp $tmpdir/merged.txt $final_outputfile
+
+    count_domains=$(wc -l < "$final_outputfile")
+    threads=$(echo "scale=0; ($count_domains * 0.15 + 0.5)/1" | bc)
+    [ "$threads" -lt 1 ] && threads=1
+    echo "" > $output/$domain_search.webservers && webservers_outfile="$output/$domain_search.webservers"
+    echo -e "$info Lodaed $count_domains targets...$end\n\n"
+    round=0
+    servers=0
+
+    while read -r domain; do
+      ((round++))
+      parallel -j "$threads" check_web_server ::: "$domain" ::: http https ::: "$webservers_outfile"
+      ((servers += $?))
+
+      percent_print=$(printf "%.2f" "$(echo "$round / $count_domains * 100" | bc -l)")
+      rest=$((count_domains - round))
+      echo -ne "$yellow[$percent_print%] $servers found - $rest remaining domains$end\r"
+    done < "$final_outputfile"
   fi
 }
-
 
 dnsWebServersEnum(){
   # Check if the provider domain has a TLS site for enum the alternative DNS names by using OpenSSL
@@ -364,17 +382,20 @@ help(){ # Simply help function
 tput cnorm
 }
 
-checkDependencies() { # Check dependencies of 'host' & 'curl' command
-    if ! command -v host &> /dev/null
-    then
-        echo -e "$error 'host' command is not available, please install the bind-utils/dnsutils package. $end"
+checkDependencies() { # Check dependencies: curl, host, parallel.
+
+  declare -A dependencies=(
+    ["host"]="bind-utils/dnsutils"
+    ["curl"]="curl"
+    ["parallel"]="Parallel"
+  )
+
+  for cmd in "${!dependencies[@]}"; do
+    if ! command -v "$cmd" &> /dev/null; then
+      echo -e "$error '$cmd' command is not available, please install the ${dependencies[$1]} package. $end"
         clean
     fi
-    if ! command -v curl &> /dev/null
-    then
-        echo -e "$error 'curl' command is not available, please install the curl package. $end"
-        clean
-    fi
+  done
 }
 
 banner(){
