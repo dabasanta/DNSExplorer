@@ -39,7 +39,6 @@ clean(){
 dictionaryAttackCustom() { #5
   dicc_outfile="$tmpdir/dictionary.results.txt"
   : > "$dicc_outfile"
-
   check=0
   while [ "$check" -eq 0 ]; do
     echo -e "$question"
@@ -84,7 +83,7 @@ dictionaryAttack(){ #5
   dicc="$tmpdir/bitq.txt"
   dicc_outfile="$tmpdir/dicctionary.results.txt"
   echo "" > $dicc_outfile
-  echo -e "\n$info Using the first 1.000 records of the dictionary:$green https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt\n\e[1m\e[36mCourtesy of seclists ;)\nTake it slow and go for coffe.$end\nThe obtained data will be written to the temporary directory and will be saved to disk when the script execution is completely finished.\n"
+  echo -e "\n$info Using the first 1.000 records of:$green https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt$end\n"
   curl -s https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/bitquark-subdomains-top100000.txt -o $bitquark
   l_bitq=$(cat $bitquark | wc -l)
   
@@ -107,7 +106,6 @@ dictionaryAttack(){ #5
 }
 
 bruteForceDNS(){ # Trigger the dictorinary attack
-  #dnsWebServersEnum
   echo -e " 
   ██████╗ ██╗ ██████╗ ██████╗████████╗██╗ ██████╗ ███╗   ██╗ █████╗ ██████╗ ██╗   ██╗
   ██╔══██╗██║██╔════╝██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║██╔══██╗██╔══██╗╚██╗ ██╔╝
@@ -131,8 +129,8 @@ bruteForceDNS(){ # Trigger the dictorinary attack
   while true; do
     read -rp "[d/c]> " dc
     case $dc in
-      [Dd]* ) dictionaryAttack "$1"; break;;
-      [Cc]* ) dictionaryAttackCustom "$1"; break;;
+      [Dd]* ) dictionaryAttack; break;;
+      [Cc]* ) dictionaryAttackCustom; break;;
       * ) echo -e "$error Please answer$green D$end \e[1m\e[91mor$end$green\e[1m C$end\e[1m\e[91m.$end\n";;
     esac
   done
@@ -194,7 +192,6 @@ crtSH(){ #7
       echo -e "$info CRTsh results\n[$size_crtsh_output] total subdomains found"
     fi
 
-    # Consolidate all data in single file
     cat $subdomain_wildcard_file | sed 's/*\.//g' > $tmpdir/0.txt
     cat $dictionary_results > $tmpdir/1.txt 2>/dev/null
     cat $subdomain_file > $tmpdir/2.txt
@@ -206,6 +203,7 @@ crtSH(){ #7
     count_domains=$(wc -l < "$final_outputfile")
     threads=$(echo "scale=0; ($count_domains * 0.15 + 0.5)/1" | bc)
     [ "$threads" -lt 1 ] && threads=1
+    [ "$threads" -gt 25 ] && threads=25
     echo "" > $output/$DOMAIN.webservers && webservers_outfile="$output/$DOMAIN.webservers"
     echo -e "$info Lodaed $count_domains targets...$end\n\n"
     round=0
@@ -235,6 +233,7 @@ crtSH(){ #7
     count_domains=$(wc -l < "$final_outputfile")
     threads=$(echo "scale=0; ($count_domains * 0.15 + 0.5)/1" | bc)
     [ "$threads" -lt 1 ] && threads=1
+    [ "$threads" -gt 25 ] && threads=25
     echo "" > $output/$DOMAIN.webservers && webservers_outfile="$output/$DOMAIN.webservers"
     echo -e "$info Lodaed $count_domains targets...$end\n\n"
     round=0
@@ -262,19 +261,22 @@ dnsWebServersEnum(){ #6
   connected=$(echo -n | openssl s_client -connect  "$DOMAIN:443" 2>/dev/null | head -1 | awk -F "(" '{print $1}')
 
   if [[ "$connected" == "CONNECTED" ]];then
-      DNS=$(echo -n | openssl s_client -connect "$DOMAIN:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | sed 's/\                //'|grep -i "DNS:" | awk -F ":" '{print $1}')
+    DNS=$(echo -n | openssl s_client -connect "$DOMAIN:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | sed 's/\                //'|grep -i "DNS:" | awk -F ":" '{print $1}')
 
-      if [[ "$DNS" == "DNS" ]];then
-          echo -e "\n$info The domain $resalted_output$DOMAIN$cyan has a secure webserver and your certificate have these alternate domain names:\e[92m"
-          echo -n | openssl s_client -connect "$DOMAIN:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:"| tr ',' '\n' | sed 's/\               //' | sed 's/\s//g' | sed 's/DNS://g'
-          subjects=$(echo -n | openssl s_client -connect "$DOMAIN:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:" | tr ',' '\n' | sed 's/\               //' | wc -l)
-          crtSH
-      else
-          echo -e "$question Domain $DOMAIN has secure website at $DOMAIN:443, but does not have alternate subject names.\n"
-          crtSH
-      fi
+    if [[ "$DNS" == "DNS" ]];then
+      subjects=$(echo -n | openssl s_client -connect "$DOMAIN:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:" | tr ',' '\n' | sed 's/\               //')
+      len_subjects=$(echo -n | openssl s_client -connect "$DOMAIN:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:" | tr ',' '\n' | sed 's/\               //' | wc -l)
+      echo -e "\n\n$info The domain $resalted_output$DOMAIN$cyan has a secure webserver and your certificate have $len_subjects domain names:$end"
+      [ "$len_subjects" -gt 5 ] && echo -n | openssl s_client -connect "$DOMAIN:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:"| tr ',' '\n' | sed 's/\               //' | sed 's/\s//g' | sed 's/DNS://g' | head -5
+      echo -e "$info Please take note of SAN properties in HTTPS certificate$end"
+      crtSH
+    else
+      echo -e "$question Domain $DOMAIN has secure website at $DOMAIN:443, but does not have alternate subject names.\n"
+      crtSH
+    fi
   else
-      echo -e "$error No website found on $DOMAIN:443\n"
+    echo -e "$error No website found on $DOMAIN:443\n"
+    crtSH
   fi
 
   ## LLAMA A CRTSH, INCLUSO SI NO HAY WEBSERVER QUE CHEKEAR CON OPENSSL.
