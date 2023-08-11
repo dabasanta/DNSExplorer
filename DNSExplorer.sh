@@ -15,11 +15,11 @@ green="\e[92m"
 ok="\e[1m\e[92m"
 resalted_output="\e[1;37m"
 
-tmpdir="/tmp/dnsexplorer" # Setting tmp path
-mkdir -p $tmpdir  # Creating temporally directory
-tput civis  # Making beep off
+tmpdir="/tmp/dnsexplorer"
+mkdir -p $tmpdir
+tput civis
 
-clean(){  # Cleaning the system after execution
+clean(){
     echo -e "\n\n"
     rm -rf $tmpdir
     echo -e "${end}Happy hunting."
@@ -30,14 +30,13 @@ clean(){  # Cleaning the system after execution
 function scape() {  # Catch the ctrl_c INT key
   clean
 }
-
 trap scape INT
 
-# Creating output directory
-mkdir -p $1.out
-output="$1.out"
+# Global vars
+export DOMAIN="None"
+export EXTENDED_CHECKS=false
 
-dictionaryAttackCustom() {
+dictionaryAttackCustom() { #5
   dicc_outfile="$tmpdir/dictionary.results.txt"
   : > "$dicc_outfile"
 
@@ -57,8 +56,9 @@ dictionaryAttackCustom() {
   lon_dicc=$(wc -l < "$dfile")
   tput civis
 
-  echo -e "$info Using the dictionary '$dfile'. The process may take some time depending on the number of records.\n"
-  echo -e "$question\tThis file has $lon_dicc records, 20 parallel processes will be used to speed up the attack, press any key to start\n"
+  threads=$(echo "scale=0; ($lon_dicc * 0.15 + 0.5)/1" | bc)
+  [ "$threads" -lt 1 ] && threads=1
+  echo -e "$question\tThis file has $lon_dicc records, $threads parallel processes will be used to speed up the attack, press any key to start\n"
   read -n 1 -s -r -p ""
 
   grep -v '^ *#' < "$dfile" | xargs -P 20 -I {} sh -c '
@@ -68,15 +68,15 @@ dictionaryAttackCustom() {
       printf ".... Subdomain found: %s.%s\n" "$sub" "$2"
     fi
     printf "[~] Reading file... \r"
-  ' _ {} "$1" "$dicc_outfile"
+  ' _ {} "$DOMAIN" "$dicc_outfile"
 
   total=$(wc -l $dicc_outfile)
   echo -e "$info $total Subdomains found.$end"
   sleep 5s
-  dnsWebServersEnum "$1"
+  dnsWebServersEnum
 }
 
-dictionaryAttack(){ # Performs a dictionary attack agains the target
+dictionaryAttack(){ #5
   tput civis
   bitquark="$tmpdir/bit.txt"
   dicc="$tmpdir/bitq.txt"
@@ -96,16 +96,16 @@ dictionaryAttack(){ # Performs a dictionary attack agains the target
       printf ".... Subdomain found: %s.%s\n" "$sub" "$2"
     fi
     printf "[~] Reading file... \r"
-  ' _ {} "$1" "$dicc_outfile"
+  ' _ {} "$DOMAIN" "$dicc_outfile"
   else
     echo -e "$error Could not download dictionary from seclists url.$end"
-    dictionaryAttackCustom "$1"
+    dictionaryAttackCustom
   fi
-  dnsWebServersEnum "$1"
+  dnsWebServersEnum
 }
 
 bruteForceDNS(){ # Trigger the dictorinary attack
-
+  #dnsWebServersEnum
   echo -e " 
   ██████╗ ██╗ ██████╗ ██████╗████████╗██╗ ██████╗ ███╗   ██╗ █████╗ ██████╗ ██╗   ██╗
   ██╔══██╗██║██╔════╝██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║██╔══██╗██╔══██╗╚██╗ ██╔╝
@@ -136,7 +136,7 @@ bruteForceDNS(){ # Trigger the dictorinary attack
   done
 }
 
-check_web_server() {
+check_web_server() { #8
   local end="\e[0m"
   local cyan="\e[1m\e[36m"
   local ok="\e[1m\e[92m"
@@ -158,9 +158,9 @@ check_web_server() {
 }
 export -f check_web_server
 
-crtSH(){ # Abuse of crt.sh website - Internet connection required.
+# Abuse of crt.sh website - Internet connection required.
+crtSH(){ #7
   dictionary_results="$tmpdir/dicctionary.results.txt"
-  domain_search=$1
   crtshoutput="$tmpdir/crtsh-output.txt"
   crtsh_parsed_output="$tmpdir/crt.sh.reg"
   subdomain_file="$output/$domain_search.subdomains.txt"
@@ -169,8 +169,7 @@ crtSH(){ # Abuse of crt.sh website - Internet connection required.
   echo "" > $subdomain_file && echo "" > $subdomain_wildcard_file
   echo -e "\n$info Finding subdomains - abusing Certificate Transparency Logs using https://crt.sh/\n$end"
 
-  # Starting crt.sh connection
-  curl -sk "https://crt.sh/?q=${domain_search}&output=json" -o $crtshoutput 2>&1
+  curl -sk "https://crt.sh/?q=${DOMAIN}&output=json" -o $crtshoutput 2>&1
   if [ $? ];then
     # Getting entire output list
     cat $crtshoutput | sed 's/,/\n/g' | grep 'common_name' | cut -d : -f 2 | sed 's/"//g' | sed 's/\\n/\n/g' > $crtsh_parsed_output
@@ -205,7 +204,7 @@ crtSH(){ # Abuse of crt.sh website - Internet connection required.
     count_domains=$(wc -l < "$final_outputfile")
     threads=$(echo "scale=0; ($count_domains * 0.15 + 0.5)/1" | bc)
     [ "$threads" -lt 1 ] && threads=1
-    echo "" > $output/$domain_search.webservers && webservers_outfile="$output/$domain_search.webservers"
+    echo "" > $output/$DOMAIN.webservers && webservers_outfile="$output/$DOMAIN.webservers"
     echo -e "$info Lodaed $count_domains targets...$end\n\n"
     round=0
     servers=0
@@ -234,7 +233,7 @@ crtSH(){ # Abuse of crt.sh website - Internet connection required.
     count_domains=$(wc -l < "$final_outputfile")
     threads=$(echo "scale=0; ($count_domains * 0.15 + 0.5)/1" | bc)
     [ "$threads" -lt 1 ] && threads=1
-    echo "" > $output/$domain_search.webservers && webservers_outfile="$output/$domain_search.webservers"
+    echo "" > $output/$DOMAIN.webservers && webservers_outfile="$output/$DOMAIN.webservers"
     echo -e "$info Lodaed $count_domains targets...$end\n\n"
     round=0
     servers=0
@@ -249,80 +248,89 @@ crtSH(){ # Abuse of crt.sh website - Internet connection required.
       echo -ne "$yellow[$percent_print%] $servers found - $rest remaining domains$end\r"
     done < "$final_outputfile"
   fi
+
+  ### AQUI CONTINUA LA EJECUCION DEL SCRIPT, SI EL --EXTENDED FUE APLICADO, SE DEBE VERIFICAR AQUI PARA SABER SI SE TOMA LA LISTA DE LOS SERVIDORES WEB Y SE ENUMERAN
+  #####
+  #####
+  #####
+
 }
 
-dnsWebServersEnum(){
-  # Check if the provider domain has a TLS site for enum the alternative DNS names by using OpenSSL
-  connected=$(echo -n | openssl s_client -connect  "$1:443" 2>/dev/null | head -1 | awk -F "(" '{print $1}')
+dnsWebServersEnum(){ #6
+  connected=$(echo -n | openssl s_client -connect  "$DOMAIN:443" 2>/dev/null | head -1 | awk -F "(" '{print $1}')
 
   if [[ "$connected" == "CONNECTED" ]];then
-      DNS=$(echo -n | openssl s_client -connect "$1:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | sed 's/\                //'|grep -i "DNS:" | awk -F ":" '{print $1}')
+      DNS=$(echo -n | openssl s_client -connect "$DOMAIN:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | sed 's/\                //'|grep -i "DNS:" | awk -F ":" '{print $1}')
 
       if [[ "$DNS" == "DNS" ]];then
-          echo -e "\n$info The domain $resalted_output$1$cyan has a secure webserver and your certificate have these alternate domain names:\e[92m"
-          echo -n | openssl s_client -connect "$1:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:"| tr ',' '\n' | sed 's/\               //' | sed 's/\s//g' | sed 's/DNS://g'
-          subjects=$(echo -n | openssl s_client -connect "$1:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:" | tr ',' '\n' | sed 's/\               //' | wc -l)
-          crtSH "$1"
+          echo -e "\n$info The domain $resalted_output$DOMAIN$cyan has a secure webserver and your certificate have these alternate domain names:\e[92m"
+          echo -n | openssl s_client -connect "$DOMAIN:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:"| tr ',' '\n' | sed 's/\               //' | sed 's/\s//g' | sed 's/DNS://g'
+          subjects=$(echo -n | openssl s_client -connect "$DOMAIN:443" 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | openssl x509 -text | grep "DNS:" | tr ',' '\n' | sed 's/\               //' | wc -l)
+          crtSH
       else
-          echo -e "$question Domain $1 has secure website at $1:443, but does not have alternate subject names.\n"
-          crtSH "$1"
+          echo -e "$question Domain $DOMAIN has secure website at $DOMAIN:443, but does not have alternate subject names.\n"
+          crtSH
       fi
   else
-      echo -e "$error No website found on $1:443\n"
+      echo -e "$error No website found on $DOMAIN:443\n"
   fi
+
+  ## LLAMA A CRTSH, INCLUSO SI NO HAY WEBSERVER QUE CHEKEAR CON OPENSSL.
+  ## 
 }
 
-initHostRecon(){
+initHostRecon(){ #3
   echo -e "$info Finding IP address for A records \e[92m"
   # A Records
-  host "$1" | grep 'has address' | awk '{print $4}'
+  host "$DOMAIN" | grep 'has address' | awk '{print $4}'
 
   echo -e "$info Finding IPv6 address for AAA records \e[92m"
   # AAA Records
-  if host "$1" | grep 'IPv6' >/dev/null 2>&1;then
-    host "$1" | grep 'IPv6'| awk '{print $5}'
+  if host "$DOMAIN" | grep 'IPv6' >/dev/null 2>&1;then
+    host "$DOMAIN" | grep 'IPv6'| awk '{print $5}'
     echo -e ""
   else
-    echo -e "$question Hosts $1 has not IPv6 address\n"
+    echo -e "$question Hosts $DOMAIN has not IPv6 address\n"
   fi
 
-  echo -e "$info Finding mail server address for $resalted_output$1$cyan domain \e[92m"
+  echo -e "$info Finding mail server address for $resalted_output$DOMAIN$cyan domain \e[92m"
   # MAIL Records
-  if host -t MX "$1" | grep 'mail' >/dev/null 2>&1;then
-    host "$1" | grep 'mail' | awk '{print $6,$7}'
+  if host -t MX "$DOMAIN" | grep 'mail' >/dev/null 2>&1;then
+    host "$DOMAIN" | grep 'mail' | awk '{print $6,$7}'
     echo -e ""
   else
-    echo -e "$question Hosts $1 has not mail server records\n"
+    echo -e "$question Hosts $DOMAIN has not mail server records\n"
   fi
   
-  echo -e "$info Finding CNAME records for $resalted_output$1$cyan domain \e[92m"
+  echo -e "$info Finding CNAME records for $resalted_output$DOMAIN$cyan domain \e[92m"
   # CNAME Records
-  if host -t CNAME "$1" | grep 'alias' >/dev/null 2>&1;then
-    host -t CNAME "$1" | awk '{print $1,$4,$6}'
+  if host -t CNAME "$DOMAIN1" | grep 'alias' >/dev/null 2>&1;then
+    host -t CNAME "$DOMAIN" | awk '{print $1,$4,$6}'
     echo -e ""
   else
-    echo -e "$question Hosts $1 has not alias records\n"
+    echo -e "$question Hosts $DOMAIN has not alias records\n"
   fi
 
-  echo -e "$info Finding text description for $resalted_output$1$cyan domain \e[92m"
+  echo -e "$info Finding text description for $resalted_output$DOMAIN$cyan domain \e[92m"
 ` # TXT Records`
-  if host -t txt "$1" | grep 'descriptive' >/dev/null 2>&1;then
-    host -t txt "$1" | grep 'descriptive'
+  if host -t txt "$DOMAIN" | grep 'descriptive' >/dev/null 2>&1;then
+    host -t txt "$DOMAIN" | grep 'descriptive'
     echo -e ""
   else
-    echo -e "$question Hosts $1 has not description records\n"
+    echo -e "$question Hosts $DOMAIN has not description records\n"
   fi
 }
 
-doZoneTransfer(){
-  if host -t NS "$1" | grep 'name server' >/dev/null 2>&1;then
-    host -t NS "$1" | cut -d " " -f 4
-    host -t NS "$1" | cut -d " " -f 4 > $tmpdir/NameServers.txt
+doZoneTransfer(){ #4
+  success=1
+  if host -t NS "$DOMAIN" | grep 'name server' >/dev/null 2>&1;then
+    host -t NS "$DOMAIN" | cut -d " " -f 4
+    host -t NS "$DOMAIN" | cut -d " " -f 4 > $tmpdir/NameServers.txt
     ns=$(wc -l $tmpdir/NameServers.txt | awk '{print $1}')
     echo -e "\n$info $ns DNS Servers was found, trying ZoneTransfer on these servers$end"
 
     while IFS= read -r nameserver;do
-      host -t axfr "$1" "$nameserver" | grep -E 'Received ([0-9]+) bytes from [0-9\.]+#[0-9]+ in ([0-9]+) ms' >/dev/null 2>&1
+      host -t axfr "$DOMAIN" "$nameserver" | grep -E 'Received ([0-9]+) bytes from [0-9\.]+#[0-9]+ in ([0-9]+) ms' >/dev/null 2>&1
       if [ $? -eq 0 ];then
         echo -e "$green NameServer $nameserver accept ZoneTransfer$end\n"
         success=0
@@ -333,7 +341,7 @@ doZoneTransfer(){
 
     if [ $success -eq 0 ];then
       echo -e "\n$ok DNS zone transfer was possible, no bruteforce attacks on the subdomains are required. $end\n"
-      dnsWebServersEnum "$1"
+      dnsWebServersEnum
       clean
     else
       echo -e "\n$error DNS zone transfer was not possible, DNS servers are not accept it"
@@ -346,8 +354,8 @@ doZoneTransfer(){
         echo -e "$end"
 
         case $yn in
-          [Yy]* ) bruteForceDNS "$1"; clean; break;;
-          [Nn]* ) dnsWebServersEnum "$1"; clean;;
+          [Yy]* ) bruteForceDNS; clean; break;;
+          [Nn]* ) dnsWebServersEnum; clean;;
           * ) echo -e "$error Please answer yes or no.$end\n";;
         esac
       done
@@ -355,11 +363,10 @@ doZoneTransfer(){
   fi
 }
 
-basicRecon(){ # Init recon with 'host' command
-  success=1
-  initHostRecon "$1"
-  doZoneTransfer "$1"
-  
+# Init recon with 'host' command
+basicRecon(){  #2
+  initHostRecon
+  doZoneTransfer
 }
 
 help(){ # Simply help function
@@ -410,26 +417,29 @@ banner(){
         ░ ▒  ▒ ░ ░░   ░ ▒░░ ░▒  ░ ░ ░ ░  ░░░   ░▒ ░░▒ ░     ░ ░ ▒  ░  ░ ▒ ▒░   ░▒ ░ ▒░ ░ ░  ░  ░▒ ░ ▒░
         ░ ░  ░    ░   ░ ░ ░  ░  ░     ░    ░    ░  ░░         ░ ░   ░ ░ ░ ▒    ░░   ░    ░     ░░   ░ 
         ░             ░       ░     ░  ░ ░    ░               ░  ░    ░ ░     ░        ░  ░   ░     
-        ░ v:1.0.1     ░$end By: Danilo Basanta (https://github.com/dabasanta/) | (https://www.linkedin.com/in/danilobasanta/)\n\n"
+        ░ v:1.0.1     ░$end By: Danilo Basanta (https://github.com/dabasanta/) | (https://www.linkedin.com/in/danilobasanta/)\n\n
 
+
+\033[3mThe author does not promote malicious actions or the use of the script for illegal operations. Remember to always obtain prior permission from the target company's system administrators before performing any malicious actions.\033[0m\n\n"
 }
 
-main(){
+main(){ #1
+  mkdir -p $DOMAIN.out
+  output="$DOMAIN.out"
   banner
   checkDependencies
-  # Check very basic ping
-  if ping -c 1 "$1" > /dev/null 2>&1;then
-      if host "$1" > /dev/null 2>&1;then
-          basicRecon "$1"
+  if ping -c 1 "$DOMAIN" > /dev/null 2>&1;then
+      if host "$DOMAIN" > /dev/null 2>&1;then
+          basicRecon "$DOMAIN"
       else
           echo -e "$error No route to host, please verify your DNS server or internet connection$end"
           clean
       fi
   else
-      echo -e "$question PING was not success, does server ignoring ICMP packets?$end"
-      if host "$1" > /dev/null 2>&1;then
-          echo -e "$info Running checks anyway$end\n"
-          basicRecon "$1"
+      echo -e "${question}PING was not success, does server ignoring ICMP packets?$end"
+      if host "$DOMAIN" > /dev/null 2>&1;then
+          echo -e "${info}Running checks anyway$end\n"
+          basicRecon "$DOMAIN"
       else
           echo -e "$error No route to host, please verify your DNS server or internet connection$end"
           clean
@@ -437,24 +447,25 @@ main(){
   fi
 }
 
-# Init flow
-if [ $# == 1 ];then # Validate params
-
-  if [ "$1" = "-h" ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ] || [ "$2" = "-h" ] || [ "$2" = "--help" ] || [ "$2" = "-help" ] || [ "$2" = "help" ];then # Need help?
-    help
-  elif [ $# == 1 ];then # pass
-    main "$1"
-  fi
-elif [ $# == 2 ];then
-  if [ "$1" = "-h" ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ] || [ "$2" = "-h" ] || [ "$2" = "--help" ] || [ "$2" = "-help" ] || [ "$2" = "help" ];then # Doble Check
-        help
+# Init  flow
+if [ "$1" = "-h" ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$2" = "-h" ] || [ "$2" = "--help" ] || [ "$2" = "help" ]; then
+  help
+elif [ $# -eq 2 ]; then
+  if [ "$2" = "--extended" ]; then
+    DOMAIN=$1
+    EXTENDED_CHECKS=true
+    main "$DOMAIN"
   else
-    main "$1"
-  fi
-else
-    echo -e "$error Invalid arguments $end"
+    echo -e "$error Parameter '$2' is not recognized $end"
     help
     tput cnorm
     exit 1
+  fi
+elif [ $# -eq 0 ]; then
+  help
+  tput cnorm
+  exit 1
+else
+  DOMAIN=$1
+  main "$DOMAIN"
 fi
-
