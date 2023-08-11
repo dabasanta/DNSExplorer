@@ -3,7 +3,20 @@
 # @author-linkedin: https://www.linkedin.com/in/danilobasanta/
 # @author-github: https://github.com/dabasanta
 
-# Changing between bash colors in outputs
+# GLOBAL VARS
+export DOMAIN="None"
+export EXTENDED_CHECKS=false
+export DNS_BRUTE_THREADS=0
+
+function scape() {
+  clean
+}
+trap scape INT
+
+tmpdir="/tmp/dnsexplorer"
+mkdir -p $tmpdir
+tput civis
+
 end="\e[0m"
 info="\e[1m\e[36m[+]"
 cyan="\e[1m\e[36m"
@@ -15,10 +28,6 @@ green="\e[92m"
 ok="\e[1m\e[92m"
 resalted_output="\e[1;37m"
 
-tmpdir="/tmp/dnsexplorer"
-mkdir -p $tmpdir
-tput civis
-
 clean(){
     echo -e "\n\n"
     rm -rf $tmpdir
@@ -26,15 +35,6 @@ clean(){
     tput cnorm
     exit 0
 }
-
-function scape() {  # Catch the ctrl_c INT key
-  clean
-}
-trap scape INT
-
-# Global vars
-export DOMAIN="None"
-export EXTENDED_CHECKS=false
 
 dictionaryAttackCustom() { #5
   dicc_outfile="$tmpdir/dictionary.results.txt"
@@ -58,10 +58,12 @@ dictionaryAttackCustom() { #5
 
   threads=$(echo "scale=0; ($lon_dicc * 0.15 + 0.5)/1" | bc)
   [ "$threads" -lt 1 ] && threads=1
+  [ "$threads" -gt 25 ] && threads=25
+  [ "$DNS_BRUTE_THREADS" -ne 0 ] && threads="$DNS_BRUTE_THREADS"
   echo -e "$question\tThis file has $lon_dicc records, $threads parallel processes will be used to speed up the attack, press any key to start\n"
   read -n 1 -s -r -p ""
 
-  grep -v '^ *#' < "$dfile" | xargs -P 20 -I {} sh -c '
+  grep -v '^ *#' < "$dfile" | xargs -P $threads -I {} sh -c '
     sub="$1"
     if host "$sub.$2" | head -1 | grep -q "has address"; then
       echo "$sub.$2" >> "$3"
@@ -304,7 +306,7 @@ initHostRecon(){ #3
   
   echo -e "$info Finding CNAME records for $resalted_output$DOMAIN$cyan domain \e[92m"
   # CNAME Records
-  if host -t CNAME "$DOMAIN1" | grep 'alias' >/dev/null 2>&1;then
+  if host -t CNAME "$DOMAIN" | grep 'alias' >/dev/null 2>&1;then
     host -t CNAME "$DOMAIN" | awk '{print $1,$4,$6}'
     echo -e ""
   else
