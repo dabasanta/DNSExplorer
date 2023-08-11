@@ -6,6 +6,12 @@ DNSExplorer is a shell script that automates the enumeration process of a domain
 
 Its goal is enum the domains and subdomains using the default server in the revolv.conf file to give an overview of the DNS service.
 
+DNSExplorer is an initial enumeration and recognition tool, useful for use in pentesting and internal or external redteam, with DNSExplorer you can get a good foothold through a company's footprint.
+DNSExplorer is free to use, anyone can modify or add functions to improve the approach. The author does not promote malicious actions or the use of the script for illegal operations. Remember to always obtain prior permission from the target company's system administrators before performing any malicious actions. While DNSExplorer does not perform actions that may compromise the integrity, confidentiality or availability of information, it may generate noise on the company's network if it is continuously monitored, which may cause security alerts.
+Integrity: DNSExplorer is a read-only tool, it does not make any modification to the company's assets.
+Availability: DNSExplorer does not perform actions that could compromise the availability of the technological assets of the targets.
+Confidentiality: DNSExplorer does not keep record of the data obtained in servers or services external to the user who executes the script, so the information collected remains in the hands of the user. While DNSExplorer does not expose highly sensitive confidential information - since the information was already public in the first place - its execution on internal networks can reveal critical information about your internal infrastructure, so we recommend that the results be treated with caution.
+
 ## Dependencies
 
 - OpenSSL
