@@ -15,6 +15,8 @@ trap scape INT
 
 tmpdir="/tmp/dnsexplorer"
 mkdir -p $tmpdir
+mkdir -p $tmpdir/whatweb
+mkdir -p $tmpdir/wafw00f
 tput civis
 
 end="\e[0m"
@@ -141,20 +143,21 @@ check_web_server() { #8
   local cyan="\e[1m\e[36m"
   local ok="\e[1m\e[92m"
   local resalted_output="\e[1;37m"
-  local domain="$1"
-  local protocol="$2"
-  local webservers_outfile="$3"
-  local response=$(curl -m 3 --head --silent --output /dev/null --write-out '%{http_code}' "${protocol}://${domain}")
+  local -r webservers_outfile=$(mktemp /tmp/dnsexplorer/XXXX.webservers.txt)
 
+  local response=$(curl -m 3 --head --silent --output /dev/null --write-out '%{http_code}' "http://${1}")
   if ((response >= 100 && response <= 599)); then
-    local secure=""
-    local protocol_upper=$(echo "$protocol" | tr '[:lower:]' '[:upper:]')
     [ "$protocol" == "https" ] && secure=" secure"
-    echo -e "${end}The domain $resalted_output$domain$end has a$secure web server. [$cyan$protocol_upper$end:$ok$response$end]"
-    echo "${protocol}://$domain" >> "$webservers_outfile"
-    return 1
+    echo -e "${end}The domain $resalted_output$1$end has a web server. [${cyan}HTTP${end}:$ok$response$end]"
+    echo "http://$1" >> "$webservers_outfile"
   fi
-  return 0
+
+  local response=$(curl -m 3 --head --silent --output /dev/null --write-out '%{http_code}' "https://${1}")
+  if ((response >= 100 && response <= 599)); then
+    [ "$protocol" == "https" ] && secure=" secure"
+    echo -e "${end}The domain $resalted_output$1$end has a secure web server. [${cyan}HTTPS${end}:$ok$response$end]"
+    echo "https://$1" >> "$webservers_outfile"
+  fi
 }
 export -f check_web_server
 
@@ -163,9 +166,9 @@ crtSH(){ #7
   dictionary_results="$tmpdir/dicctionary.results.txt"
   crtshoutput="$tmpdir/crtsh-output.txt"
   crtsh_parsed_output="$tmpdir/crt.sh.reg"
-  subdomain_file="$output/$domain_search.subdomains.txt"
-  subdomain_wildcard_file="$output/$domain_search.wildcard.txt"
-  final_outputfile="$output/$domain_search-all.txt"
+  subdomain_file="$output/$DOMAIN.subdomains.txt"
+  subdomain_wildcard_file="$output/$DOMAIN.wildcard.txt"
+  final_outputfile="$output/$DOMAIN-all.txt"
   echo "" > $subdomain_file && echo "" > $subdomain_wildcard_file
   echo -e "\n$info Finding subdomains - abusing Certificate Transparency Logs using https://crt.sh/\n$end"
 
@@ -204,20 +207,10 @@ crtSH(){ #7
     threads=$(echo "scale=0; ($count_domains * 0.15 + 0.5)/1" | bc)
     [ "$threads" -lt 1 ] && threads=1
     [ "$threads" -gt 25 ] && threads=25
-    echo "" > $output/$DOMAIN.webservers && webservers_outfile="$output/$DOMAIN.webservers"
+    webservers_outfile="$output/$DOMAIN.webservers"
     echo -e "$info Lodaed $count_domains targets...$end\n\n"
-    round=0
-    servers=0
 
-    while read -r domain; do
-      ((round++))
-      parallel -j "$threads" check_web_server ::: "$domain" ::: http https ::: "$webservers_outfile"
-      ((servers += $?))
-
-      percent_print=$(printf "%.2f" "$(echo "$round / $count_domains * 100" | bc -l)")
-      rest=$((count_domains - round))
-      echo -ne "$yellow[$percent_print%] $servers found - $rest remaining domains \r"
-    done < "$final_outputfile"
+    sort -u "$final_outputfile" | parallel -j "$threads" check_web_server
 
   else
     echo -e "$error Unable to connect to CTR.sh$end"
@@ -234,28 +227,77 @@ crtSH(){ #7
     threads=$(echo "scale=0; ($count_domains * 0.15 + 0.5)/1" | bc)
     [ "$threads" -lt 1 ] && threads=1
     [ "$threads" -gt 25 ] && threads=25
-    echo "" > $output/$DOMAIN.webservers && webservers_outfile="$output/$DOMAIN.webservers"
+    webservers_outfile="$output/$DOMAIN.webservers"
     echo -e "$info Lodaed $count_domains targets...$end\n\n"
-    round=0
-    servers=0
 
-    while read -r domain; do
-      ((round++))
-      parallel -j "$threads" check_web_server ::: "$domain" ::: http https ::: "$webservers_outfile"
-      ((servers += $?))
-
-      percent_print=$(printf "%.2f" "$(echo "$round / $count_domains * 100" | bc -l)")
-      rest=$((count_domains - round))
-      echo -ne "$yellow[$percent_print%] $servers found - $rest remaining domains$end\r"
-    done < "$final_outputfile"
+    sort -u "$final_outputfile" | parallel -j "$threads" check_web_server
   fi
 
-  ### AQUI CONTINUA LA EJECUCION DEL SCRIPT, SI EL --EXTENDED FUE APLICADO, SE DEBE VERIFICAR AQUI PARA SABER SI SE TOMA LA LISTA DE LOS SERVIDORES WEB Y SE ENUMERAN
-  #####
-  #####
-  #####
+  cat /tmp/dnsexplorer/*.webservers.txt > "$webservers_outfile"
 
+# ExtendedChecks
+  if $EXTENDED_CHECKS;then
+    local -r webEnumOutputCSV="$output/$DOMAIN.webenum.csv"
+    echo "URL,HTTPServer,IP,PoweredBy,X-Powered-By,Country,WAF" > "$webEnumOutputCSV"
+
+    count_webservers=$(wc -l < "$webservers_outfile")
+    threads_webenum=$(echo "scale=0; ($count_webservers * 0.15 + 0.5)/1" | bc)
+    [ "$threads_webenum" -lt 1 ] && threads=1
+    [ "$threads_webenum" -gt 25 ] && threads=25
+
+    sort -u "$webservers_outfile" | parallel -j "$threads_webenum" webEnum
+    cat $tmpdir/whatweb/*.csv >> "$webEnumOutputCSV"
+  fi
 }
+
+###########################################################################################3###########################################################################################
+#
+#3Listo solo falta guardar los valores globales de estas variables para imprimirlo al final 
+#
+#domain="example.com"
+#dns_servers_count=4
+#subdomains_count=10
+#webservers_count=3
+#waf_protected_sites_count=2
+#unprotected_websites_count=1
+#
+############################################################################################3###########################################################################################
+
+
+webEnum() { #9
+  if [ -z "$1" ]; then
+    return 1
+  fi
+
+  if [[ $1 != http://* && $1 != https://* ]]; then
+    return 1
+  fi
+  
+  local -r wafwoof_txt_tmp_output=$(mktemp /tmp/dnsexplorer/wafw00f/XXX.wafw00f)
+  local -r output_txt_webenum_file=$(mktemp /tmp/dnsexplorer/whatweb/XXX.csv)
+
+  wafw00f "$1" -f json -o "$wafwoof_txt_tmp_output" > /dev/null 2>&1
+  firewall_detected=$(cat "$wafwoof_txt_tmp_output" | grep -oE '"firewall": "[^"]+"' | awk -F': ' '{gsub(/[",]/, "", $2); print $2}')
+  [ -z "$firewall_detected" ] && firewall_detected="None"
+
+  local -r ww_result=$(whatweb --no-errors --open-timeout=7 --read-timeout=15 --colour=never "$1" 2>/dev/null)
+
+  echo "${info}Testing webserver $1"
+
+  httpserver=$(echo "$ww_result" | grep -o 'HTTPServer\[[^]]*\]' | cut -d'[' -f2 | cut -d']' -f1)
+  [ -z "$httpserver" ] && httpserver="None"
+  ip=$(echo "$ww_result" | grep -o 'IP\[[^]]*\]' | cut -d'[' -f2 | cut -d']' -f1)
+  [ -z "$ip" ] && ip="None"
+  poweredby=$(echo "$ww_result" | grep -o 'PoweredBy\[[^]]*\]' | cut -d'[' -f2 | cut -d']' -f1)
+  [ -z "$country" ] && country="None"
+  xpoweredby=$(echo "$ww_result" | grep -o 'X-Powered-By\[[^]]*\]' | cut -d'[' -f2 | cut -d']' -f1)
+  [ -z "$poweredby" ] && poweredby="None"
+  country=$(echo "$ww_result" | grep -o 'Country\[[^]]*\]' | cut -d'[' -f2 | cut -d']' -f1)
+  [ -z "$xpoweredby" ] && xpoweredby="None"
+
+  echo "\"$1\",\"$httpserver\",\"$ip\",\"$poweredby\",\"$xpoweredby\",\"$country\",\"$firewall_detected\"" > "$output_txt_webenum_file"
+}
+export -f webEnum
 
 dnsWebServersEnum(){ #6
   connected=$(echo -n | openssl s_client -connect  "$DOMAIN:443" 2>/dev/null | head -1 | awk -F "(" '{print $1}')
@@ -278,9 +320,6 @@ dnsWebServersEnum(){ #6
     echo -e "$error No website found on $DOMAIN:443\n"
     crtSH
   fi
-
-  ## LLAMA A CRTSH, INCLUSO SI NO HAY WEBSERVER QUE CHEKEAR CON OPENSSL.
-  ## 
 }
 
 initHostRecon(){ #3
@@ -410,6 +449,21 @@ checkDependencies() { # Check dependencies: curl, host, parallel.
   done
 }
 
+optDependencies() { # Check dependencies: curl, host, parallel.
+
+  declare -A dependencies=(
+    ["whatweb"]="whatweb"
+    ["wafw00f"]="wafw00f"
+  )
+
+  for cmd in "${!dependencies[@]}"; do
+    if ! command -v "$cmd" &> /dev/null; then
+      echo -e "$error '$cmd' command is not available, please install the ${dependencies[$1]} package for extended checks. $end"
+        clean
+    fi
+  done
+}
+
 banner(){
     echo -e "\e[91m
         ▓█████▄  ███▄    █   ██████ ▓█████ ▒██   ██▒ ██▓███   ██▓     ▒█████   ██▀███  ▓█████  ██▀███  
@@ -458,6 +512,7 @@ elif [ $# -eq 2 ]; then
   if [ "$2" = "--extended" ]; then
     DOMAIN=$1
     EXTENDED_CHECKS=true
+    optDependencies
     main "$DOMAIN"
   else
     echo -e "$error Parameter '$2' is not recognized $end"
