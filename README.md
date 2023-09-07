@@ -1,6 +1,6 @@
 # DNSExplorer
 
-![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/banner.png)
+![](https://raw.githubusercontent.com/dabasanta/DNSExplorer/main/examples/Banner.gif)
 
 DNSExplorer is a shell script that automates the enumeration process of a domain or DNS server and its subdomains using 'host' as the main tool.
 
